@@ -166,34 +166,37 @@ We will need the following identity (repeatedly),
  \int \exp\left\{ -\frac{1}{2} \left[ z^T \Upsilon z - 2 \psi^T z + c \right] \right\} dz = \sqrt{ \left|\left| \Upsilon^{-1} \right|\right| } \exp\left\{ -\frac{1}{2} \left[ c - \psi^T \Upsilon^{-1} \psi \right] \right\}     .
 \end{IEEEeqnarray}
 
-This is a simpler form of Fredrik's Lemma 1.
+In addition, we will be using the integral trick for rank-deficient Gaussians,
+%
+\begin{IEEEeqnarray}{rCl}
+ \mathcal{N}(z|\mu,\Sigma) & = & \int \delta_{\mu + \Delta \epsilon}(z) \mathcal{N}(\epsilon|0,I) d\epsilon     ,
+\end{IEEEeqnarray}
+
+where $\Sigma = \Delta \Delta^T$. If $\Sigma$ is $d \times d$ and has rank $r$, then $\Delta$ is $d \times r$ and $\epsilon$ has length $r$. Together, these two identities constitute Fredrik's Lemma 1.
 
 The integral is given by,
 %
 \begin{IEEEeqnarray}{rCl}
 \IEEEeqnarraymulticol{3}{l}{\int p(z_t|u_{1:t}^{(i)}, y_{1:t}) p(y_{t+1:T}|z_t, u_{t+1:T}) dz_t } \nonumber \\
 \qquad \qquad & = & \hat{Z}_{t} \int \mathcal{N}( z_t|m_t^{(i)}, P_t^{(i)} ) \exp\left\{ -\frac{1}{2} \left[ z_t^T \hat{\Omega}_t z_t - 2 \hat{\lambda}_t^T z_t \right] \right\} dz_t \nonumber \\
- & = & \hat{Z}_{t} \frac{1}{\sqrt{\left| \left| 2 \pi P_t^{(i)} \right| \right|}} \int \exp\left\{ -\frac{1}{2} \eta \right\} dz_t \\
- & = & \hat{Z}_{t} \sqrt{\frac{\left| \left| \left(P_t^{(i)-1}+\hat{\Omega}_t\right)^{-1} \right| \right|}{\left| \left| P_t^{(i)} \right| \right|}} \exp\left\{ -\frac{1}{2} \nu \right\}     ,
+ & = & \hat{Z}_{t} \left| \left| 2 \pi I \right| \right|^{-\frac{1}{2}} \int \exp\left\{ -\frac{1}{2} \eta \right\} d\epsilon \nonumber \\
+ & = & \hat{Z}_{t} \left| \left| 2 \pi I \right| \right|^{-\frac{1}{2}} \left| \left| 2 \pi \left( \Gamma_t^{(i)T} \hat{\Omega}_t \Gamma_t^{(i)} + I \right)^{-1} \right| \right|^{\frac{1}{2}} \exp\left\{ -\frac{1}{2} \nu \right\} d\epsilon \nonumber \\
+ & = & \hat{Z}_{t} \left| \left| \left( \Gamma_t^{(i)T} \hat{\Omega}_t \Gamma_t^{(i)} + I \right) \right| \right|^{-\frac{1}{2}} \exp\left\{ -\frac{1}{2} \nu \right\} \nonumber \\
 \end{IEEEeqnarray}
 
-where,
+where $P_t^{(i)} = \Gamma_t^{(i)} \Gamma_t^{(i)T}$ and,
 %
 \begin{IEEEeqnarray}{rCl}
- \eta  & = & z_t^T \hat{\Omega}_t z_t - \hat{\lambda}_t^T z_t + (z_t - m_t^{(i)})^T P_t^{(i)-1} (z_t - m_t^{(i)}) \nonumber \\
-       & = & z_t^T \left[ \hat{\Omega}_t + P_t^{(i)-1} \right] z_t - 2 \left[ \hat{\lambda}_t^T + m_t^{(i)T} P_t^{(i)-1} \right] z_t + \left[ m_t^{(i)T} P_t^{(i)-1} m_t^{(i)} \right]     ,
+ \eta  & = &  \left(m_t^{(i)} + \Gamma_t^{(i)} \epsilon\right)^T \hat{\Omega}_t \left(m_t^{(i)} + \Gamma_t^{(i)} \epsilon\right) - 2 \hat{\lambda}_t^T \left(m_t^{(i)} + \Gamma_t^{(i)} \epsilon\right) + \epsilon^T \epsilon \nonumber \\
+       & = & \epsilon^T \left[ \Gamma_t^{(i)T} \hat{\Omega}_t \Gamma_t^{(i)} + I \right] - 2 \left[ \hat{\lambda}_t^T - m_t^{(i)T} \hat{\Omega}_t \Gamma_t^{(i)} \right] \epsilon + \left[ m_t^{(i)T} \hat{\Omega}_t m_t^{(i)} - \hat{\lambda}_t^T m_t^{(i)} \right]     ,
 \end{IEEEeqnarray}
 
 and
 %
 \begin{IEEEeqnarray}{rCl}
- \nu & = & m_t^{(i)T} P_t^{(i)-1} m_t^{(i)} - \left[ \hat{\lambda}_t^T + m_t^{(i)T} P_t^{(i)-1} \right] \left[ \hat{\Omega}_t + P_t^{(i)-1} \right]^{-1} \left[ \hat{\lambda}_t + P_t^{(i)-1} m_t^{(i)} \right] \nonumber \\
-     & = & m_t^{(i)T} \left[ P_t^{(i)-1} - P_t^{(i)-1} \left(P_t^{(i)-1}+\hat{\Omega}_t\right)^{-1}  P_t^{(i)-1} \right] m_t^{(i)} \nonumber \\
-     &   & - \: 2 \left[ \hat{\lambda}_t^T \left(P_t^{(i)-1}+\hat{\Omega}_t\right)^{-1} P_t^{(i)-1} \right] m_t^{(i)} \nonumber \\
-     &   & - \: \left[ \hat{\lambda}_t^T \left(P_t^{(i)-1}+\hat{\Omega}_t\right)^{-1} \hat{\lambda}_t \right]     .
+ \nu & = & \left[ m_t^{(i)T} \hat{\Omega}_t m_t^{(i)} - \hat{\lambda}_t^T m_t^{(i)} \right] \nonumber \\
+     &   & \qquad - \left[ \hat{\lambda}_t^T - m_t^{(i)T} \hat{\Omega}_t \Gamma_t^{(i)} \right] \left[ \Gamma_t^{(i)T} \hat{\Omega}_t \Gamma_t^{(i)} + I \right]^{-1} \left[ \hat{\lambda}_t - \Gamma_t^{(i)T} \hat{\Omega}_t m_t^{(i)} \right]
 \end{IEEEeqnarray}
-
-We could simplify this significantly using the Woodbury and matrix inverse identities if $\hat{\Omega}_t$ was invertible, but we don't want to assume that to be the case.
 
 Now we need backwards recursions for the following,
 %
@@ -208,39 +211,43 @@ Predict:
 
 \begin{IEEEeqnarray}{rCl}
  \IEEEeqnarraymulticol{3}{l}{ p(y_{t+1:T}|z_t, u_{t+1:T}) = \int p(y_{t+1:T}|z_{t+1}, u_{t+1:T}) p(z_{t+1} | z_t, u_{t+1}) dz_{t+1} } \nonumber \\
- & = & Z_{t+1} \frac{1}{\sqrt{ \left|\left| 2 \pi Q_{t+1} \right|\right| }} \int \exp\left\{ -\frac{1}{2} \zeta \right\} dz_{t+1} \\
- & = & Z_{t+1} \sqrt{\frac{\left| \left| \left(Q_{t+1}^{-1}+\Omega_{t+1}\right)^{-1} \right| \right|}{\left| \left| Q_{t+1} \right| \right|}} \exp\left\{ -\frac{1}{2} \xi \right\}
+ & = & Z_{t+1} \int \exp\left\{ -\frac{1}{2} \left[ z_{t+1}^T \Omega_{t+1} z_{t+1} - 2 \lambda_{t+1}^T z_{t+1} \right] \right\} \mathcal{N}(z_{t+1}|A_{t+1} z_t, Q_{t+1}) dz_{t+1} \nonumber \\
+ & = & Z_{t+1} \left|\left| 2 \pi I \right|\right|^{-\frac{1}{2}} \int \exp\left\{ -\frac{1}{2} \zeta \right\} d\epsilon \nonumber \\
+ & = & Z_{t+1} \left|\left| \left( F_{t+1}^T \Omega_{t+1} F_{t+1} + I \right) \right|\right|^{-\frac{1}{2}} \exp\left\{ -\frac{1}{2} \xi \right\}
 \end{IEEEeqnarray}
 
-where
+where $Q_{t+1} = F_{t+1} F_{t+1}^T$ and,
 %
 \begin{IEEEeqnarray}{rCl}
- \zeta & = & z_{t+1}^T \Omega_{t+1} z_{t+1} - 2 \lambda_{t+1}^T z_{t+1} + (z_{t+1} - A_{t+1} z_{t})^T Q_{t+1}^{-1} (z_{t+1} - A_{t+1} z_{t}) \nonumber \\
-       & = & z_{t+1}^T \left[ \Omega_{t+1} + Q_{t+1}^{-1} \right] z_{t+1} - 2 \left[ \lambda_{t+1}^T + z_{t}^T A_{t+1}^T Q_{t+1}^{-1} \right] z_{t+1} + \left[ z_{t}^T A_{t+1}^T Q_{t+1}^{-1} A_{t+1} z_{t} \right]     ,
+ \zeta & = &  \left(A_{t+1} z_t + F_{t+1} \epsilon\right)^T \Omega_{t+1} \left(A_{t+1} z_t + F_{t+1} \epsilon\right) - 2 \lambda_{t+1}^T \left(A_{t+1} z_t + F_{t+1} \epsilon\right) + \epsilon^T \epsilon \nonumber \\
+       & = & \epsilon^T \left[ F_{t+1}^T \Omega_{t+1} F_{t+1} + I \right] \epsilon - 2 \left[ \lambda_{t+1}^T F_{t+1} - z_t^T A_{t+1}^T \Omega_{t+1} F_{t+1} \right] \epsilon \nonumber \\
+       &   & \qquad \qquad \qquad \qquad \qquad + \: \left[ z_t^T A_{t+1}^T \Omega_{t+1} A_{t+1} z_t - 2 \lambda_{t+1}^T A_{t+1} z_t \right]     ,
 \end{IEEEeqnarray}
 
 and,
 %
 \begin{IEEEeqnarray}{rCl}
- \xi & = & z_{t}^T A_{t+1}^T Q_{t+1}^{-1} A_{t+1} z_{t} - \left[ \lambda_{t+1}^T + z_{t}^T A_{t+1}^T Q_{t+1}^{-1} \right] \left[ \Omega_{t+1} + Q_{t+1}^{-1} \right]^{-1} \left[ \lambda_{t+1} + Q_{t+1}^{-1} A_{t+1} z_{t} \right] \nonumber \\
-     & = & z_{t}^T \left[ A_{t+1}^T \left( Q_{t+1}^{-1} - Q_{t+1}^{-1} \left(Q_{t+1}^{-1}+\Omega_{t+1}\right)^{-1}  Q_{t+1}^{-1} \right) A_{t+1} \right] z_{t} \nonumber \\
-     &   & - \: 2 \left[ \lambda_{t+1}^T \left(Q_{t+1}^{-1}+\Omega_{t+1}\right)^{-1} Q_{t+1}^{-1} A_{t+1} \right] z_{t} \nonumber \\
-     &   & - \: \left[ \lambda_{t+1}^T \left(Q_{t+1}^{-1}+\Omega_{t+1}\right)^{-1} \lambda_{t+1} \right]     .
+ \xi & = & \left[ z_t^T A_{t+1}^T \Omega_{t+1} A_{t+1} z_t - \lambda_{t+1}^T A_{t+1} z_t \right] \nonumber \\
+     &   & \qquad - \left[ \lambda_{t+1}^T F_{t+1} - z_t^T A_{t+1}^T \Omega_{t+1} F_{t+1} \right] \left[ F_{t+1}^T \Omega_{t+1} F_{t+1} + I \right]^{-1} \left[ F_{t+1}^T \lambda_{t+1} - F_{t+1}^T \Omega_{t+1} A_{t+1} z_t \right] \nonumber \\
+     & = & z_t^T \left[ A_{t+1}^T \left( \Omega_{t+1} - \Omega_{t+1} F_{t+1} \left( F_{t+1}^T \Omega_{t+1} F_{t+1} + I \right)^{-1} F_{t+1}^T \Omega_{t+1} \right) A_{t+1} \right] z_t \nonumber \\
+     &   & - \: 2 \left[ \lambda_{t+1}^T \left( I - F_{t+1} \left( F_{t+1}^T \Omega_{t+1} F_{t+1} + I \right)^{-1} F_{t+1}^T \Omega_{t+1} \right) A_{t+1} \right] z_t \nonumber \\
+     &   & + \: \left[ - \lambda_{t+1}^T F_{t+1} \left( F_{t+1}^T \Omega_{t+1} F_{t+1} + I \right)^{-1} F_{t+1}^T \lambda_{t+1} \right]     .
 \end{IEEEeqnarray}
 
 Hence the prediction recursions are,
 %
 \begin{IEEEeqnarray}{rCl}
- \hat{\Omega}_t  & = & A_{t+1}^T \left( Q_{t+1}^{-1} - Q_{t+1}^{-1} \left(Q_{t+1}^{-1}+\Omega_{t+1}\right)^{-1}  Q_{t+1}^{-1} \right) A_{t+1} \\
- \hat{\lambda}_t & = & A_{t+1}^T Q_{t+1}^{-1} \left(Q_{t+1}^{-1}+\Omega_{t+1}\right)^{-1} \lambda_{t+1} \\
- \hat{Z}_t       & = & Z_{t+1} \sqrt{\frac{\left| \left| \left(Q_{t+1}^{-1}+\Omega_{t+1}\right)^{-1} \right| \right|}{\left| \left| Q_{t+1} \right| \right|}} \exp\left\{ -\frac{1}{2} \lambda_{t+1}^T \left(Q_{t+1}^{-1}+\Omega_{t+1}\right)^{-1} \lambda_{t+1} \right\}     .
+ \hat{\Omega}_t  & = & A_{t+1}^T \left( \Omega_{t+1} - \Omega_{t+1} F_{t+1} \left( F_{t+1}^T \Omega_{t+1} F_{t+1} + I \right)^{-1} F_{t+1}^T \Omega_{t+1} \right) A_{t+1} \\
+ \hat{\lambda}_t & = & A_{t+1}^T \left( I - F_{t+1} \left( F_{t+1}^T \Omega_{t+1} F_{t+1} + I \right)^{-1} F_{t+1}^T \Omega_{t+1} \right) \lambda_{t+1} \\
+ \hat{Z}_t       & = & Z_{t+1} \left|\left| \left( F_{t+1}^T \Omega_{t+1} F_{t+1} + I \right) \right|\right|^{-\frac{1}{2}} \nonumber \\
+                 &   & \qquad \qquad \qquad \times \exp\left\{ \frac{1}{2} \lambda_{t+1}^T F_{t+1} \left( F_{t+1}^T \Omega_{t+1} F_{t+1} + I \right)^{-1} F_{t+1}^T \lambda_{t+1} \right\}     .
 \end{IEEEeqnarray}
 
 Update:
 %
 \begin{IEEEeqnarray}{rCl}
  \IEEEeqnarraymulticol{3}{l}{ p(y_{t:T}|z_t, u_{t:T}) = p(y_{t+1:T}|z_t, u_{t+1:T}) p(y_{t}|z_t, u_{t}) } \nonumber \\
- & = & \hat{Z}_t \frac{1}{\sqrt{ \left|\left| 2 \pi R_{t} \right|\right| }} \exp\left\{ -\frac{1}{2} \omega \right\}     ,
+ & = & \hat{Z}_t \left|\left| 2 \pi R_{t} \right|\right|^{-\frac{1}{2}} \exp\left\{ -\frac{1}{2} \omega \right\}     ,
 \end{IEEEeqnarray}
 
 where,
@@ -255,27 +262,27 @@ Hence the update recursions are,
 \begin{IEEEeqnarray}{rCl}
  \Omega_t  & = & \hat{\Omega}_t + C_t^T R_t^{-1} C_t \\
  \lambda_t & = & \hat{\lambda}_t + R_t^{-1} C_t y_t \\
- Z_t       & = & \hat{Z}_t \frac{1}{\sqrt{ \left|\left| 2 \pi R_{t} \right|\right| }} \exp\left\{ -\frac{1}{2} y_t^T R_t^{-1} y_t \right\}      .
+ Z_t       & = & \hat{Z}_t \left|\left| 2 \pi R_{t} \right|\right|^{-\frac{1}{2}} \exp\left\{ -\frac{1}{2} y_t^T R_t^{-1} y_t \right\}      .
 \end{IEEEeqnarray}
 
-These recursions work even when $A_t$ or $\Omega_{t+1}$ is not invertible, provided $Q_{t+1}$ and $R_t$ are full rank. Moreover they are easy to initialise,
+These recursions work even when $A_t$, $\Omega_{t+1}$, or $Q_{t+1}$ is not invertible, provided $R_t$ is full rank. Moreover they are easy to initialise,
 %
 \begin{IEEEeqnarray}{rCl}
  p(y_T | z_T, u_T) & = & \mathcal{N}(y_T | C_T z_T, R_T) \nonumber \\
-                   & = & \frac{1}{\sqrt{ \left|\left| 2 \pi R_{T} \right|\right| }} \exp\left\{ -\frac{1}{2} (y_T - C_T z_T)^T R_T^{-1} (y_T - C_T z_T) \right\} \nonumber \\
-                   & = & \frac{1}{\sqrt{ \left|\left| 2 \pi R_{T} \right|\right| }} \exp\left\{ -\frac{1}{2} y_T R_T^{-1} y_T \right\} \exp\left\{ z_T^T C_T^T R_T^{-1} C_T z_T - 2 (y_T^T R_T^{-1} C_T) z_T) \right\}     .
+                   & = & \left|\left| 2 \pi R_{T} \right|\right|^{-\frac{1}{2}} \exp\left\{ -\frac{1}{2} (y_T - C_T z_T)^T R_T^{-1} (y_T - C_T z_T) \right\} \nonumber \\
+                   & = & \left|\left| 2 \pi R_{T} \right|\right|^{-\frac{1}{2}} \exp\left\{ -\frac{1}{2} y_T R_T^{-1} y_T \right\} \exp\left\{ z_T^T C_T^T R_T^{-1} C_T z_T - 2 (y_T^T R_T^{-1} C_T) z_T) \right\}     .
 \end{IEEEeqnarray}
 
 Hence,
 \begin{IEEEeqnarray}{rCl}
  \Omega_T  & = & C_T^T R_T^{-1} C_T \nonumber \\
  \lambda_T & = & C_T^T R_T^{-1} y_T \nonumber \\
- Z_T       & = & \frac{1}{\sqrt{ \left|\left| 2 \pi R_{T} \right|\right| }} \exp\left\{ -\frac{1}{2} y_T R_T^{-1} y_T \right\}     .
+ Z_T       & = & \left|\left| 2 \pi R_{T} \right|\right|^{-\frac{1}{2}} \exp\left\{ -\frac{1}{2} y_T R_T^{-1} y_T \right\}     .
 \end{IEEEeqnarray}
 
 $\Omega_T$ is not invertible, but this doesn't matter, unlike the original formulation.
 
-Because the normalisation constants are always finite (for full rank $Q_{t}$ and $R_t$) and depend only on the future nonlinear states, we need never calculate them.
+Because the normalisation constants are always finite (for full rank $R_t$) and depend only on the future nonlinear states, we need never calculate them.
 
 
 
@@ -314,40 +321,42 @@ p(y_{t+1:T}, u_{t+1:T}|z_t, u_t) & = & \hat{Z}_{t} \exp\left\{ -\frac{1}{2} \lef
 Assume we have estimates of $Z_{t+1}$, $\lambda_{t+1}$ and $\Omega_{t+1}$.
 
 Predict:
-
+%
 \begin{IEEEeqnarray}{rCl}
  \IEEEeqnarraymulticol{3}{l}{ p(y_{t+1:T}, u_{t+1:T}|z_t, u_t) = \int p(y_{t+1:T}, u_{t+2:T}|z_{t+1}, u_{t+1}) p(z_{t+1}, u_{t+1} | z_t, u_{t}) dz_{t+1}} \nonumber \\
  & = & \int p(y_{t+1:T}, u_{t+2:T}|z_{t+1}, u_{t+1}) p(z_{t+1} | z_t, u_{t}), p(u_{t+1} | z_t, u_{t}) dz_{t+1} \nonumber \\
- & = & Z_{t+1} \frac{1}{\sqrt{ \left|\left| 2 \pi Q_{z,t+1} \right|\right| \left|\left| 2 \pi Q_{u,t+1} \right|\right| }} \int \exp\left\{ -\frac{1}{2} \zeta \right\} dz_{t+1} \\
- & = & Z_{t+1} \sqrt{\frac{\left| \left| \left(Q_{z,t+1}^{-1}+\Omega_{t+1}\right)^{-1} \right| \right|}{\left|\left| 2 \pi Q_{z,t+1} \right|\right| \left|\left| 2 \pi Q_{u,t+1} \right|\right|}} \exp\left\{ -\frac{1}{2} \xi \right\}     ,
+ & = & Z_{t+1} \left|\left| 2 \pi Q_{u,t} \right|\right|^{-\frac{1}{2}} \left|\left| 2 \pi I \right|\right|^{-\frac{1}{2}} \int \exp\left\{ -\frac{1}{2} \zeta \right\} d\epsilon \\
+ & = & Z_{t+1} \left|\left| 2 \pi Q_{u,t} \right|\right|^{-\frac{1}{2}} \left|\left| \left( F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right) \right|\right|^{-\frac{1}{2}} \exp\left\{ -\frac{1}{2} \xi \right\}     ,
 \end{IEEEeqnarray}
 
-where,
+where $Q_{z,t} = F_{z,t} F_{z,t}^T$ and,
 %
 \begin{IEEEeqnarray}{rCl}
- \zeta & = & z_{t+1}^T \Omega_{t+1} z_{t+1} - 2 \lambda_{t+1}^T z_{t+1} + (z_{t+1} - A_{z,t+1} z_{t})^T Q_{z,t+1}^{-1} (z_{t+1} - A_{z,t+1} z_{t}) \nonumber \\
-       &   & \qquad \qquad \qquad \qquad + \: (u_{t+1} - A_{u,t+1} z_{t})^T Q_{u,t+1}^{-1} (u_{t+1} - A_{u,t+1} z_{t}) \nonumber \\
-       & = & z_{t+1}^T \left[ \Omega_{t+1} + Q_{z,t+1}^{-1} \right] z_{t+1} - 2 \left[ \lambda_{t+1}^T + z_{t}^T A_{z,t+1}^T Q_{z,t+1}^{-1} \right] z_{t+1} \nonumber \\
-       &   & \qquad + \: \left[ z_{t}^T A_{z,t+1}^T Q_{z,t+1}^{-1} A_{z,t+1} z_{t} + (u_{t+1} - A_{u,t+1} z_{t})^T Q_{u,t+1}^{-1} (u_{t+1} - A_{u,t+1} z_{t}) \right] \IEEEeqnarraynumspace     ,
+ \zeta & = &  \left(A_{z,t} z_t + F_{z,t} \epsilon\right)^T \Omega_{t+1} \left(A_{z,t} z_t + F_{z,t} \epsilon\right) \nonumber \\
+       &   & - \: 2 \lambda_{t+1}^T \left(A_{z,t} z_t + F_{z,t} \epsilon\right) + \epsilon^T \epsilon \nonumber \\
+       &   & + \: (u_{t+1} - A_{u,t} z_{t})^T Q_{u,t}^{-1} (u_{t+1} - A_{u,t} z_{t}) \nonumber \\
+       & = & \epsilon^T \left[ F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right] \epsilon \nonumber \\
+       &   & - \: 2 \left[ \lambda_{t+1}^T F_{z,t} - z_t^T A_{z,t}^T \Omega_{t+1} F_{z,t} \right] \epsilon \nonumber \\
+       &   & + \: \left[ z_t^T A_{z,t}^T \Omega_{t+1} A_{z,t} z_t - 2 \lambda_{t+1}^T A_{z,t} z_t + (u_{t+1} - A_{u,t} z_{t})^T Q_{u,t}^{-1} (u_{t+1} - A_{u,t} z_{t}) \right]     ,
 \end{IEEEeqnarray}
 
 and,
 %
 \begin{IEEEeqnarray}{rCl}
- \xi & = & z_{t}^T A_{z,t+1}^T Q_{z,t+1}^{-1} A_{z,t+1} z_{t} + (u_{t+1} - A_{u,t+1} z_{t})^T Q_{u,t+1}^{-1} (u_{t+1} - A_{u,t+1} z_{t}) \nonumber \\
-     &   & - \: \left[ \lambda_{t+1}^T + z_{t}^T A_{z,t+1}^T Q_{z,t+1}^{-1} \right] \left[ \Omega_{t+1} + Q_{z,t+1}^{-1} \right]^{-1} \left[ \lambda_{t+1} + Q_{z,t+1}^{-1} A_{z,t+1} z_{t} \right] \nonumber \\
-     & = & z_{t}^T \left[ A_{z,t+1}^T \left( Q_{z,t+1}^{-1} - Q_{z,t+1}^{-1} \left(Q_{z,t+1}^{-1}+\Omega_{t+1}\right)^{-1}  Q_{z,t+1}^{-1} \right) A_{z,t+1} + A_{u,t+1}^T Q_{u,t+1}^{-1} A_{u,t+1} \right] z_{t} \nonumber \\
-     &   & - \: 2 \left[ \lambda_{t+1}^T \left(Q_{z,t+1}^{-1}+\Omega_{t+1}\right)^{-1} Q_{z,t+1}^{-1} A_{z,t+1} + u_{t+1}^T Q_{u,t+1}^{-1} A_{u,t+1} \right] z_{t} \nonumber \\
-     &   & - \: \left[ \lambda_{t+1}^T \left(Q_{z,t+1}^{-1}+\Omega_{t+1}\right)^{-1} \lambda_{t+1}  + u_{t+1}^T Q_{u,t+1}^{-1} u_{t+1} \right]     .
+ \xi & = & z_t^T A_{z,t}^T \Omega_{t+1} A_{z,t} z_t - 2 \lambda_{t+1}^T A_{z,t} z_t + (u_{t+1} - A_{u,t} z_{t})^T Q_{u,t}^{-1} (u_{t+1} - A_{u,t} z_{t}) \nonumber \\
+     &   & - \: \left[ \lambda_{t+1}^T F_{z,t} - z_t^T A_{z,t}^T \Omega_{t+1} F_{z,t} \right] \left[ F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right]^{-1} \left[ F_{z,t} \lambda_{t+1} - F_{z,t}^T \Omega_{t+1} A_{z,t} z_t \right] \nonumber \\
+     & = & z_t^T \left[ A_{z,t}^T \left( \Omega_{t+1} - \Omega_{t+1} F_{z,t} \left( F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right)^{-1} F_{z,t}^T \Omega_{t+1} \right) A_{z,t} + A_{u,t}^T Q_{u,t}^{-1} A_{u,t} \right] z_t \nonumber \\
+     &   & - \: 2 \left[ \lambda_{t+1}^T \left( I - F_{z,t} \left( F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right)^{-1} F_{z,t}^T \Omega_{t+1} \right) A_{z,t} + u_{t+1}^T Q_{u,t}^{-1} A_{u,t} \right] z_t \nonumber \\
+     &   & + \: \left[ - \lambda_{t+1}^T F_{z,t} \left( F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right)^{-1} F_{z,t}^T \lambda_{t+1} + u_{t+1}^T Q_{u,t}^{-1} u_{t+1} \right]     .
 \end{IEEEeqnarray}
 
 Hence the prediction recursions are,
 %
 \begin{IEEEeqnarray}{rCl}
- \hat{\Omega}_t  & = & A_{z,t+1}^T \left( Q_{z,t+1}^{-1} - Q_{z,t+1}^{-1} \left(z,Q_{t+1}^{-1}+\Omega_{t+1}\right)^{-1}  Q_{z,t+1}^{-1} \right) A_{z,t+1} + A_{u,t+1}^T Q_{u,t+1}^{-1} A_{u,t+1} \\
- \hat{\lambda}_t & = & A_{z,t+1}^T Q_{z,t+1}^{-1} \left(Q_{z,t+1}^{-1}+\Omega_{t+1}\right)^{-1} \lambda_{t+1} + A_{u,t+1}^T Q_{u,t+1}^{-1} u_{t+1} \\
- \hat{Z}_t       & = & Z_{t+1} \sqrt{\frac{\left| \left| \left(Q_{z,t+1}^{-1}+\Omega_{t+1}\right)^{-1} \right| \right|}{\left|\left| 2 \pi Q_{z,t+1} \right|\right| \left|\left| 2 \pi Q_{u,t+1} \right|\right|}} \nonumber \\
-                 &   & \qquad \times \exp\left\{ -\frac{1}{2} \left[ \lambda_{t+1}^T \left(Q_{z,t+1}^{-1}+\Omega_{t+1}\right)^{-1} \lambda_{t+1}  + u_{t+1}^T Q_{u,t+1}^{-1} u_{t+1} \right] \right\}     .
+ \hat{\Omega}_t  & = & A_{z,t}^T \left( \Omega_{t+1} - \Omega_{t+1} F_{z,t} \left( F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right)^{-1} F_{z,t}^T \Omega_{t+1} \right) A_{z,t} + A_{u,t}^T Q_{u,t}^{-1} A_{u,t} \\
+ \hat{\lambda}_t & = & \lambda_{t+1}^T \left( I - F_{z,t} \left( F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right)^{-1} F_{z,t}^T \Omega_{t+1} \right) A_{z,t} + u_{t+1}^T Q_{u,t}^{-1} A_{u,t} \\
+ \hat{Z}_t       & = & Z_{t+1} \left|\left| 2 \pi Q_{u,t} \right|\right|^{-\frac{1}{2}} \left|\left| \left( F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right) \right|\right|^{-\frac{1}{2}} \nonumber \\
+                 &   & \times \exp\left\{ -\frac{1}{2} \left[ - \lambda_{t+1}^T F_{z,t} \left( F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right)^{-1} F_{z,t}^T \lambda_{t+1} + u_{t+1}^T Q_{u,t}^{-1} u_{t+1} \right] \right\}     .
 \end{IEEEeqnarray}
 
 Note that unlike hierarchical model, these all depend on $u_t$ through the matrices $A_{z,t}$, $A_{u,t}$, $Q_{z,t}$, $Q_{u,t}$, so we will need to run a backward filter for every particle in the filter distribution (or at least, every one which we propose if we use rejection or MH sampling).
@@ -356,7 +365,7 @@ Update (this is identical to the hierarchical model):
 %
 \begin{IEEEeqnarray}{rCl}
  \IEEEeqnarraymulticol{3}{l}{ p(y_{t:T}, u_{t+1:T}|z_t, u_t) = p(y_{t+1:T}, u_{t+1:T}|z_t, u_t) p(y_{t}|z_t, u_{t}) } \nonumber \\
- & = & \hat{Z}_t \frac{1}{\sqrt{ \left|\left| 2 \pi R_{t} \right|\right| }} \exp\left\{ -\frac{1}{2} \omega \right\}     ,
+ & = & \hat{Z}_t \left|\left| 2 \pi R_{t} \right|\right|^{-\frac{1}{2}} \exp\left\{ -\frac{1}{2} \omega \right\}     ,
 \end{IEEEeqnarray}
 
 where,
@@ -371,22 +380,22 @@ Hence the update recursions are,
 \begin{IEEEeqnarray}{rCl}
  \Omega_t  & = & \hat{\Omega}_t + C_t^T R_t^{-1} C_t \\
  \lambda_t & = & \hat{\lambda}_t + R_t^{-1} C_t y_t \\
- Z_t       & = & \hat{Z}_t \frac{1}{\sqrt{ \left|\left| 2 \pi R_{t} \right|\right| }} \exp\left\{ -\frac{1}{2} y_t^T R_t^{-1} y_t \right\}      .
+ Z_t       & = & \hat{Z}_t \left|\left| 2 \pi R_{t} \right|\right|^{-\frac{1}{2}} \exp\left\{ -\frac{1}{2} y_t^T R_t^{-1} y_t \right\}      .
 \end{IEEEeqnarray}
 
 Finally, the initialisation. This requires the observation that when $t=T$, $p(y_{t:T}, u_{t+1:T} | z_t, u_t) = p(y_T | z_T, u_T)$. But then it's identical to the hierarchical model.
 %
 \begin{IEEEeqnarray}{rCl}
  p(y_T | z_T, u_T) & = & \mathcal{N}(y_T | C_T z_T, R_T) \nonumber \\
-                   & = & \frac{1}{\sqrt{ \left|\left| 2 \pi R_{T} \right|\right| }} \exp\left\{ -\frac{1}{2} (y_T - C_T z_T)^T R_T^{-1} (y_T - C_T z_T) \right\} \nonumber \\
-                   & = & \frac{1}{\sqrt{ \left|\left| 2 \pi R_{T} \right|\right| }} \exp\left\{ -\frac{1}{2} y_T R_T^{-1} y_T \right\} \exp\left\{ z_T^T C_T^T R_T^{-1} C_T z_T - 2 (y_T^T R_T^{-1} C_T) z_T) \right\}     .
+                   & = & \left|\left| 2 \pi R_{T} \right|\right|^{-\frac{1}{2}} \exp\left\{ -\frac{1}{2} (y_T - C_T z_T)^T R_T^{-1} (y_T - C_T z_T) \right\} \nonumber \\
+                   & = & \left|\left| 2 \pi R_{T} \right|\right|^{-\frac{1}{2}} \exp\left\{ -\frac{1}{2} y_T R_T^{-1} y_T \right\} \exp\left\{ z_T^T C_T^T R_T^{-1} C_T z_T - 2 (y_T^T R_T^{-1} C_T) z_T) \right\}     .
 \end{IEEEeqnarray}
 
 Hence,
 \begin{IEEEeqnarray}{rCl}
  \Omega_T  & = & C_T^T R_T^{-1} C_T \nonumber \\
  \lambda_T & = & C_T^T R_T^{-1} y_T \nonumber \\
- Z_T       & = & \frac{1}{\sqrt{ \left|\left| 2 \pi R_{T} \right|\right| }} \exp\left\{ -\frac{1}{2} y_T R_T^{-1} y_T \right\}     .
+ Z_T       & = & \left|\left| 2 \pi R_{T} \right|\right|^{-\frac{1}{2}} \exp\left\{ -\frac{1}{2} y_T R_T^{-1} y_T \right\}     .
 \end{IEEEeqnarray}
 
 All done.
