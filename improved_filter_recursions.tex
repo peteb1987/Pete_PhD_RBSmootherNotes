@@ -1,0 +1,396 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{IEEEtrantools}
+\usepackage{color}
+
+\newenvironment{meta}[0]{\color{red} \em}{}
+
+\title{Rao-Blackwellised Particle Smoothing: Incorporating suggested improvements from Fredrik Lindsten and Gerlach et al.}
+\author{Pete Bunch}
+\date{25th September 2012}
+
+\begin{document}
+
+\maketitle
+
+\section{Basics}
+
+Our model is,
+%
+\begin{IEEEeqnarray}{rCl}
+  u_t &\sim& p(u_t | u_{t-1}) \nonumber \\
+  z_t &=& A(u_{t}) z_{t-1} + q_{t} \nonumber \\
+  y_t &=& C(u_t) z_{t} + r_{t} \\
+  q_{t} &\sim& \mathcal{N}(\cdot|0,Q(u_t)) \nonumber \\
+  r_{t} &\sim& \mathcal{N}(\cdot|0,R(u_t)) \nonumber
+\end{IEEEeqnarray}
+
+This is the more standard model, not the one used in our conference paper.
+
+With smoothing, we would like to estimate
+%
+\begin{equation}
+p(z_{1:T}, u_{1:T}|y_{1:T}) = p(z_{1:T}| u_{1:T}, y_{1:T}) p(u_{1:T}|y_{1:T}),
+\end{equation}
+
+where $z_{1:T}$ and $u_{1:T}$ are the linear and nonlinear parts of the state respectively.
+
+\section{Backward Simulation}
+
+The nonlinear smoothing distribution can be factorised in the following way,
+%
+\begin{equation}
+p(u_{1:T}|y_{1:T}) = p(u_T|y_{1:T}) \prod_{t=1}^{T-1} p(u_t|u_{t+1:T}, y_{1:T})     ,
+\end{equation}
+
+which suggests a backwards sequential sampling approach. The factors may be expanded as,
+%
+\begin{IEEEeqnarray}{rCl}
+p(u_t|u_{t+1:T}, y_{1:T}) & = & \int p(u_{1:t}, z_t|u_{t+1:T}, y_{1:T}) dz_t du_{1:t-1} \nonumber \\
+ & \propto & \int p(y_{t+1:T}|z_t, u_{t+1:T}) p(u_{1:t}, z_t| u_{t+1:T}, y_{1:t}) dz_t du_{1:t-1} \nonumber \\
+ & \propto & \int p(y_{t+1:T}|z_t, u_{t+1:T}) p(u_{t+1:T}|u_{t}) p(z_t | u_{1:t}, y_{1:t}) p(u_{1:t}|y_{1:t}) dz_t du_{1:t-1} \nonumber \\
+ & \propto & \int \left[ \int p(z_t|u_{1:t}, y_{1:t}) p(y_{t+1:T}|z_t, u_{t+1:T}) dz_t \right] p(u_{1:t}|y_{1:t}) p(u_{t+1}|u_{t}) du_{1:t-1}     .  \IEEEeqnarraynumspace
+\end{IEEEeqnarray}
+
+Running a Rao-Blackwellised particle filter gives us an estimate of,
+%
+\begin{equation}
+p(u_{1:t}|y_{1:t}) \approx \sum_i w_t^{(i)} \delta_{u_{1:t}^{(i)}}(u_{1:t})     .
+\end{equation}
+
+Substituting this in, particles may be drawn from the smoothing distribution by sequentially sampling,
+%
+\begin{IEEEeqnarray}{rCl}
+p(u_t|u_{t+1:T}, y_{1:T}) & \approx & \int \sum_i w_t^{(i)} \delta_{u_{1:t}^{(i)}}(u_{1:t}) p(u_{t+1}|u_{t}) \int p(z_t|u_{1:t}, y_{1:t}) p(y_{t+1:T}|z_t, u_{t+1:T}) dz_t du_{1:t-1} \nonumber \\
+ & = & \sum_i w_t^{(i)} p(u_{t+1}|u_{t}^{(i)}) \int p(z_t|u_{1:t}^{(i)}, y_{1:t}) p(y_{t+1:T}|z_t, u_{t+1:T}) dz_t \: \delta_{u_{t}^{(i)}}(u_{t}) \nonumber \\
+ & = & \sum_i \rho^{(i)} \delta_{u_{t}^{(i)}}(u_{t})     ,
+\end{IEEEeqnarray}
+
+where,
+%
+\begin{equation}
+\rho^{(i)} \propto w_t^{(i)} p(u_{t+1}|u_{t}^{(i)}) \int p(z_t|u_{1:t}^{(i)}, y_{1:t}) p(y_{t+1:T}|z_t, u_{t+1:T}) dz_t     .
+\end{equation}
+
+\section{The Linear State Integral}
+
+\subsection{Original Formulation}
+
+The first term in the integral is given by the forward Kalman filter estimate from the forward stage
+%
+\begin{equation}
+p(z_t|u_{1:t}^{(i)}, y_{1:t}) = \mathcal{N}( z_t|m_t^{(i)}, P_t^{(i)} )     .
+\end{equation}
+
+The second term is given by a backward filter in the style of the two-filter smoother,
+%
+\begin{equation}
+p(y_{t+1:T}|z_t, u_{t+1:T}) = \hat{Z}_{t} \mathcal{N}( z_{t}|\hat{m}_t^{b}, \hat{P}_t^{b} )     .
+\end{equation}
+
+The integral is then given by,
+%
+\begin{IEEEeqnarray}{rCl}
+\IEEEeqnarraymulticol{3}{l}{\int p(z_t|u_{1:t}^{(i)}, y_{1:t}) p(y_{t+1:T}|z_t, u_{t+1:T}) dz_t } \nonumber \\
+\qquad \qquad & = & \hat{Z}_{t} \int \mathcal{N}( z_t|m_t^{(i)}, P_t^{(i)} ) \mathcal{N}( z_{t}|\hat{m}_t^{b}, \hat{P}_t^{b} ) dz_t \nonumber \\
+ & = & \hat{Z}_{t} \mathcal{N}( m_{t}^{(i)}|\hat{m}_t^{b}, P_t^{(i)} + \hat{P}_t^{b} )     .
+\end{IEEEeqnarray}
+
+The normalisation factor $\hat{Z}_{t}$ is constant over the sampling index $i$, and may thus be forgotten about (comes out in the normalisation) as long as it is finite. This will be the case apart from during the initialisation and when $A(u_t)$ is not invertible.
+
+It only remains to calculate the backward filter estimate. These are given by a recursion,
+%
+\begin{IEEEeqnarray}{rCl}
+p(y_{t:T}|z_t, u_{t:T}) & = & Z_t \mathcal{N}( z_t|m_t^{b}, P_t^{b} ) \\
+p(y_{t+1:T}|z_t, u_{t+1:T}) & = & \hat{Z}_t \mathcal{N}( z_t|\hat{m}_t^{b}, \hat{P}_t^{b} )     .
+\end{IEEEeqnarray}
+
+These are standard. We use the shorthand $A_t = A(u_t)$, $Q_t = Q(u_t)$, etc.
+
+Predict:
+
+\begin{IEEEeqnarray}{rCl}
+\IEEEeqnarraymulticol{3}{l}{ p(y_{t+1:T}|z_t, u_{t+1:T}) } \nonumber \\
+\qquad \qquad & = & \int p(y_{t+1:T}|z_{t+1}, u_{t+1:T}) p(z_{t+1}|u_{t+1}, z_t) dz_{t+1} \nonumber \\
+ & = & Z_{t+1} \int \mathcal{N}( z_{t+1}|m_{t+1}^{b}, P_{t+1}^{b} ) \mathcal{N}( z_{t+1}|A_t z_t, Q_{t+1} ) \nonumber \\
+ & = & \hat{Z}_{t} \mathcal{N}( z_t | \hat{m}_{t}^{b}, \hat{P}_t^{b} )
+\end{IEEEeqnarray}
+
+Thus:
+
+\begin{IEEEeqnarray}{rCl}
+\hat{m}_t^{b} & = & A_t^{-1} m_{t+1}^{b} \\
+\hat{P}_t^{b} & = & A_t^{-1} (P_{t+1}^{b}+Q_{t+1}) A_t^{-T} \\
+\hat{Z}_t & = & Z_{t+1} \left| \left| A_t \right| \right|^{-1}
+\end{IEEEeqnarray}
+
+Update:
+
+\begin{IEEEeqnarray}{rCl}
+\IEEEeqnarraymulticol{3}{l}{ p(y_{t:T}|z_t, u_{t:T}) } \nonumber \\
+\qquad \qquad & = & p(y_{t+1:T}|z_t, u_{t+1:T}) p(y_t|z_t, u_t) \nonumber \\
+ & = & \hat{Z}_{t} \mathcal{N}( z_t|\hat{m}_t^{b}, \hat{P}_t^{b} ) \mathcal{N}( y_t|C_t z_t, R_t ) \nonumber \\
+ & = & Z_t \mathcal{N}( z_t|m_t^{b}, P_t^{b} )
+\end{IEEEeqnarray}
+
+where:
+
+\begin{IEEEeqnarray}{rCl}
+S_t & = & C_t \hat{P}_t^{b} C_t^T + R_t \\
+K_t & = & \hat{P}_t^{b} C_t^T S_t^{-1} \\
+m_t^{b} & = & \hat{m}_t^{b} + K_t (y_t - C_t \hat{m}_t^{b}) \\
+P_t^{b} & = & \hat{S}_t - K_t S_t K_t^T \\
+Z_t & = & \hat{Z}_t \mathcal{N}( y_t|C_t \hat{m}_t, S_t )
+\end{IEEEeqnarray}
+
+This formulation has the disadvantage that it fails when $A_t$ is not invertible. Also the initialisation is messy.
+
+\subsection{Better Formulation}
+
+We use the same Kalman filter for the forward estimate
+%
+\begin{equation}
+p(z_t|u_{1:t}^{(i)}, y_{1:t}) = \mathcal{N}( z_t|m_t^{(i)}, P_t^{(i)} )     .
+\end{equation}
+
+For the backward estimate, assume the following form,
+%
+\begin{equation}
+p(y_{t+1:T}|z_t, u_{t+1:T}) = \hat{Z}_{t} \exp\left\{ -\frac{1}{2} \left[ z_t^T \hat{\Omega}_t z_t - 2 \hat{\lambda}_t^T z_t \right] \right\}     .
+\end{equation}
+
+We will need the following identity (repeatedly),
+%
+\begin{IEEEeqnarray}{rCl}
+ \int \exp\left\{ -\frac{1}{2} \left[ z^T \Upsilon z - 2 \psi^T z + c \right] \right\} dz = \sqrt{ \left|\left| \Upsilon^{-1} \right|\right| } \exp\left\{ -\frac{1}{2} \left[ c - \psi^T \Upsilon^{-1} \psi \right] \right\}     .
+\end{IEEEeqnarray}
+
+This is a simpler form of Fredrik's Lemma 1.
+
+The integral is given by,
+%
+\begin{IEEEeqnarray}{rCl}
+\IEEEeqnarraymulticol{3}{l}{\int p(z_t|u_{1:t}^{(i)}, y_{1:t}) p(y_{t+1:T}|z_t, u_{t+1:T}) dz_t } \nonumber \\
+\qquad \qquad & = & \hat{Z}_{t} \int \mathcal{N}( z_t|m_t^{(i)}, P_t^{(i)} ) \exp\left\{ -\frac{1}{2} \left[ z_t^T \hat{\Omega}_t z_t - 2 \hat{\lambda}_t^T z_t \right] \right\} dz_t \nonumber \\
+ & = & \hat{Z}_{t} \frac{1}{\sqrt{\left| \left| 2 \pi P_t^{(i)} \right| \right|}} \int \exp\left\{ -\frac{1}{2} \eta \right\} dz_t \\
+ & = & \hat{Z}_{t} \sqrt{\frac{\left| \left| \left(P_t^{(i)-1}+\hat{\Omega}_t\right)^{-1} \right| \right|}{\left| \left| P_t^{(i)} \right| \right|}} \exp\left\{ -\frac{1}{2} \nu \right\}     ,
+\end{IEEEeqnarray}
+
+where,
+%
+\begin{IEEEeqnarray}{rCl}
+ \eta  & = & z_t^T \hat{\Omega}_t z_t - \hat{\lambda}_t^T z_t + (z_t - m_t^{(i)})^T P_t^{(i)-1} (z_t - m_t^{(i)}) \nonumber \\
+       & = & z_t^T \left[ \hat{\Omega}_t + P_t^{(i)-1} \right] z_t - 2 \left[ \hat{\lambda}_t^T + m_t^{(i)T} P_t^{(i)-1} \right] z_t + \left[ m_t^{(i)T} P_t^{(i)-1} m_t^{(i)} \right]     ,
+\end{IEEEeqnarray}
+
+and
+%
+\begin{IEEEeqnarray}{rCl}
+ \nu & = & m_t^{(i)T} P_t^{(i)-1} m_t^{(i)} - \left[ \hat{\lambda}_t^T + m_t^{(i)T} P_t^{(i)-1} \right] \left[ \hat{\Omega}_t + P_t^{(i)-1} \right]^{-1} \left[ \hat{\lambda}_t + P_t^{(i)-1} m_t^{(i)} \right] \nonumber \\
+     & = & m_t^{(i)T} \left[ P_t^{(i)-1} - P_t^{(i)-1} \left(P_t^{(i)-1}+\hat{\Omega}_t\right)^{-1}  P_t^{(i)-1} \right] m_t^{(i)} \nonumber \\
+     &   & - \: 2 \left[ \hat{\lambda}_t^T \left(P_t^{(i)-1}+\hat{\Omega}_t\right)^{-1} P_t^{(i)-1} \right] m_t^{(i)} \nonumber \\
+     &   & - \: \left[ \hat{\lambda}_t^T \left(P_t^{(i)-1}+\hat{\Omega}_t\right)^{-1} \hat{\lambda}_t \right]     .
+\end{IEEEeqnarray}
+
+We could simplify this significantly using the Woodbury and matrix inverse identities if $\hat{\Omega}_t$ was invertible, but we don't want to assume that to be the case.
+
+Now we need backwards recursions for the following,
+%
+\begin{IEEEeqnarray}{rCl}
+p(y_{t:T}|z_t, u_{t:T}) = Z_{t} \exp\left\{ -\frac{1}{2} \left[ z_t^T \Omega_t z_t - 2 \lambda_t^T z_t \right] \right\} \\
+p(y_{t+1:T}|z_t, u_{t+1:T}) = \hat{Z}_{t} \exp\left\{ -\frac{1}{2} \left[ z_t^T \hat{\Omega}_t z_t - 2 \hat{\lambda}_t^T z_t \right] \right\}     .
+\end{IEEEeqnarray}
+
+Assume we have estimates of $Z_{t+1}$, $\lambda_{t+1}$ and $\Omega_{t+1}$.
+
+Predict:
+
+\begin{IEEEeqnarray}{rCl}
+ \IEEEeqnarraymulticol{3}{l}{ p(y_{t+1:T}|z_t, u_{t+1:T}) = \int p(y_{t+1:T}|z_{t+1}, u_{t+1:T}) p(z_{t+1} | z_t, u_{t+1}) dz_{t+1} } \nonumber \\
+ & = & Z_{t+1} \frac{1}{\sqrt{ \left|\left| 2 \pi Q_{t+1} \right|\right| }} \int \exp\left\{ -\frac{1}{2} \zeta \right\} dz_{t+1} \\
+ & = & Z_{t+1} \sqrt{\frac{\left| \left| \left(Q_{t+1}^{-1}+\Omega_{t+1}\right)^{-1} \right| \right|}{\left| \left| Q_{t+1} \right| \right|}} \exp\left\{ -\frac{1}{2} \xi \right\}
+\end{IEEEeqnarray}
+
+where
+%
+\begin{IEEEeqnarray}{rCl}
+ \zeta & = & z_{t+1}^T \Omega_{t+1} z_{t+1} - 2 \lambda_{t+1}^T z_{t+1} + (z_{t+1} - A_{t+1} z_{t})^T Q_{t+1}^{-1} (z_{t+1} - A_{t+1} z_{t}) \nonumber \\
+       & = & z_{t+1}^T \left[ \Omega_{t+1} + Q_{t+1}^{-1} \right] z_{t+1} - 2 \left[ \lambda_{t+1}^T + z_{t}^T A_{t+1}^T Q_{t+1}^{-1} \right] z_{t+1} + \left[ z_{t}^T A_{t+1}^T Q_{t+1}^{-1} A_{t+1} z_{t} \right]     ,
+\end{IEEEeqnarray}
+
+and,
+%
+\begin{IEEEeqnarray}{rCl}
+ \xi & = & z_{t}^T A_{t+1}^T Q_{t+1}^{-1} A_{t+1} z_{t} - \left[ \lambda_{t+1}^T + z_{t}^T A_{t+1}^T Q_{t+1}^{-1} \right] \left[ \Omega_{t+1} + Q_{t+1}^{-1} \right]^{-1} \left[ \lambda_{t+1} + Q_{t+1}^{-1} A_{t+1} z_{t} \right] \nonumber \\
+     & = & z_{t}^T \left[ A_{t+1}^T \left( Q_{t+1}^{-1} - Q_{t+1}^{-1} \left(Q_{t+1}^{-1}+\Omega_{t+1}\right)^{-1}  Q_{t+1}^{-1} \right) A_{t+1} \right] z_{t} \nonumber \\
+     &   & - \: 2 \left[ \lambda_{t+1}^T \left(Q_{t+1}^{-1}+\Omega_{t+1}\right)^{-1} Q_{t+1}^{-1} A_{t+1} \right] z_{t} \nonumber \\
+     &   & - \: \left[ \lambda_{t+1}^T \left(Q_{t+1}^{-1}+\Omega_{t+1}\right)^{-1} \lambda_{t+1} \right]     .
+\end{IEEEeqnarray}
+
+Hence the prediction recursions are,
+%
+\begin{IEEEeqnarray}{rCl}
+ \hat{\Omega}_t  & = & A_{t+1}^T \left( Q_{t+1}^{-1} - Q_{t+1}^{-1} \left(Q_{t+1}^{-1}+\Omega_{t+1}\right)^{-1}  Q_{t+1}^{-1} \right) A_{t+1} \\
+ \hat{\lambda}_t & = & A_{t+1}^T Q_{t+1}^{-1} \left(Q_{t+1}^{-1}+\Omega_{t+1}\right)^{-1} \lambda_{t+1} \\
+ \hat{Z}_t       & = & Z_{t+1} \sqrt{\frac{\left| \left| \left(Q_{t+1}^{-1}+\Omega_{t+1}\right)^{-1} \right| \right|}{\left| \left| Q_{t+1} \right| \right|}} \exp\left\{ -\frac{1}{2} \lambda_{t+1}^T \left(Q_{t+1}^{-1}+\Omega_{t+1}\right)^{-1} \lambda_{t+1} \right\}     .
+\end{IEEEeqnarray}
+
+Update:
+%
+\begin{IEEEeqnarray}{rCl}
+ \IEEEeqnarraymulticol{3}{l}{ p(y_{t:T}|z_t, u_{t:T}) = p(y_{t+1:T}|z_t, u_{t+1:T}) p(y_{t}|z_t, u_{t}) } \nonumber \\
+ & = & \hat{Z}_t \frac{1}{\sqrt{ \left|\left| 2 \pi R_{t} \right|\right| }} \exp\left\{ -\frac{1}{2} \omega \right\}     ,
+\end{IEEEeqnarray}
+
+where,
+%
+\begin{IEEEeqnarray}{rCl}
+ \omega & = & z_t^T \hat{\Omega}_t z_t - 2 \hat{\lambda}_t^T z_t + (y_t - C_t z_t)^T R_t^{-1} (y_t - C_t z_t) \nonumber \\
+        & = & z_t^T \left[ \hat{\Omega}_t + C_t^T R_t^{-1} C_t \right] z_t - 2 \left[ \hat{\lambda}_t^T + y_t^T C_t^T R_t^{-1} \right] z_t + \left[ y_t^T R_t^{-1} y_t \right]     .
+\end{IEEEeqnarray}
+
+Hence the update recursions are,
+%
+\begin{IEEEeqnarray}{rCl}
+ \Omega_t  & = & \hat{\Omega}_t + C_t^T R_t^{-1} C_t \\
+ \lambda_t & = & \hat{\lambda}_t + R_t^{-1} C_t y_t \\
+ Z_t       & = & \hat{Z}_t \frac{1}{\sqrt{ \left|\left| 2 \pi R_{t} \right|\right| }} \exp\left\{ -\frac{1}{2} y_t^T R_t^{-1} y_t \right\}      .
+\end{IEEEeqnarray}
+
+These recursions work even when $A_t$ or $\Omega_{t+1}$ is not invertible, provided $Q_{t+1}$ and $R_t$ are full rank. Moreover they are easy to initialise,
+%
+\begin{IEEEeqnarray}{rCl}
+ p(y_T | z_T, u_T) & = & \mathcal{N}(y_T | C_T z_T, R_T) \nonumber \\
+                   & = & \frac{1}{\sqrt{ \left|\left| 2 \pi R_{T} \right|\right| }} \exp\left\{ -\frac{1}{2} (y_T - C_T z_T)^T R_T^{-1} (y_T - C_T z_T) \right\} \nonumber \\
+                   & = & \frac{1}{\sqrt{ \left|\left| 2 \pi R_{T} \right|\right| }} \exp\left\{ -\frac{1}{2} y_T R_T^{-1} y_T \right\} \exp\left\{ z_T^T C_T^T R_T^{-1} C_T z_T - 2 (y_T^T R_T^{-1} C_T) z_T) \right\}     .
+\end{IEEEeqnarray}
+
+Hence,
+\begin{IEEEeqnarray}{rCl}
+ \Omega_T  & = & C_T^T R_T^{-1} C_T \nonumber \\
+ \lambda_T & = & C_T^T R_T^{-1} y_T \nonumber \\
+ Z_T       & = & \frac{1}{\sqrt{ \left|\left| 2 \pi R_{T} \right|\right| }} \exp\left\{ -\frac{1}{2} y_T R_T^{-1} y_T \right\}     .
+\end{IEEEeqnarray}
+
+$\Omega_T$ is not invertible, but this doesn't matter, unlike the original formulation.
+
+Because the normalisation constants are always finite (for full rank $Q_{t}$ and $R_t$) and depend only on the future nonlinear states, we need never calculate them.
+
+
+
+\section{Mixed Linear/Nonlinear Models}
+
+The extension to mixed models is straightforward. The new model is,
+%
+\begin{IEEEeqnarray}{rCl}
+  u_{t+1} &=& A_u(u_t) z_t + q_{u,t} \nonumber \\
+  z_{t+1} &=& A_z(u_t) z_t + q_{z,t} \nonumber \\
+  y_t &=& C(u_t) z_{t} + r_{t}. \\
+  q_{u,t} &\sim& \mathcal{N}(\cdot|0,Q_u(u_t)) \nonumber \\
+  q_{z,t} &\sim& \mathcal{N}(\cdot|0,Q_z(u_t)) \nonumber \\
+  r_{t} &\sim& \mathcal{N}(r_{t}|0,R(u_t)) \nonumber     .
+\end{IEEEeqnarray}
+
+We use equivalent short-hands for the matrices to those used previously. The thing to watch out for here is that $u_{t+1}$ is not independent of the past observations when conditioned on $u_t$. Furthermore, in order to predict $z_t$ from future observations, we will need $u_t$, unlike before. Finally, $z_{t+1}$ will be less useful as an auxiliary variable, because it will not ``block'' the sequence of state variables (because $u_{t+1}$ depends directly on $z_t$). The following derivations proceeds essentially as before.
+
+Start with the backwards conditional distribution,
+%
+\begin{IEEEeqnarray}{rCl}
+p(u_t|u_{t+1:T}, y_{1:T}) & = & \int p(u_{1:t}, z_t|u_{t+1:T}, y_{1:T}) dz_t du_{1:t-1} \nonumber \\
+ & \propto & \int p(y_{t+1:T}, u_{t+1:T}|z_t, u_{t}) p(u_{1:t}, z_t| y_{1:t}) dz_t du_{1:t-1} \nonumber \\
+ & \propto & \int \left[ \int p(y_{t+1:T}, u_{t+1:T}|z_t, u_{t}) p(z_t | u_{1:t}, y_{1:t}) dz_t \right] p(u_{1:t}|y_{1:t}) du_{1:t-1} \IEEEeqnarraynumspace     ,
+\end{IEEEeqnarray}
+
+This expression has the same form as the hierarchical model except for the exclusion of the nonlinear transition density and the modified backwards filter term. Hence, the weights have a very similar form to that derived in the previous section. We can use the particle filter and forward Kalman filter approximations as before. It only remains to estimate $p(y_{t+1:T}, u_{t+1:T}|z_t, u_{t})$.
+
+We need backwards recursions for the following,
+%
+\begin{IEEEeqnarray}{rCl}
+p(y_{t:T}, u_{t+1:T}|z_t, u_t) & = & Z_{t} \exp\left\{ -\frac{1}{2} \left[ z_t^T \Omega_t z_t - 2 \lambda_t^T z_t \right] \right\} \\
+p(y_{t+1:T}, u_{t+1:T}|z_t, u_t) & = & \hat{Z}_{t} \exp\left\{ -\frac{1}{2} \left[ z_t^T \hat{\Omega}_t z_t - 2 \hat{\lambda}_t^T z_t \right] \right\}     .
+\end{IEEEeqnarray}
+
+Assume we have estimates of $Z_{t+1}$, $\lambda_{t+1}$ and $\Omega_{t+1}$.
+
+Predict:
+
+\begin{IEEEeqnarray}{rCl}
+ \IEEEeqnarraymulticol{3}{l}{ p(y_{t+1:T}, u_{t+1:T}|z_t, u_t) = \int p(y_{t+1:T}, u_{t+2:T}|z_{t+1}, u_{t+1}) p(z_{t+1}, u_{t+1} | z_t, u_{t}) dz_{t+1}} \nonumber \\
+ & = & \int p(y_{t+1:T}, u_{t+2:T}|z_{t+1}, u_{t+1}) p(z_{t+1} | z_t, u_{t}), p(u_{t+1} | z_t, u_{t}) dz_{t+1} \nonumber \\
+ & = & Z_{t+1} \frac{1}{\sqrt{ \left|\left| 2 \pi Q_{z,t+1} \right|\right| \left|\left| 2 \pi Q_{u,t+1} \right|\right| }} \int \exp\left\{ -\frac{1}{2} \zeta \right\} dz_{t+1} \\
+ & = & Z_{t+1} \sqrt{\frac{\left| \left| \left(Q_{z,t+1}^{-1}+\Omega_{t+1}\right)^{-1} \right| \right|}{\left|\left| 2 \pi Q_{z,t+1} \right|\right| \left|\left| 2 \pi Q_{u,t+1} \right|\right|}} \exp\left\{ -\frac{1}{2} \xi \right\}     ,
+\end{IEEEeqnarray}
+
+where,
+%
+\begin{IEEEeqnarray}{rCl}
+ \zeta & = & z_{t+1}^T \Omega_{t+1} z_{t+1} - 2 \lambda_{t+1}^T z_{t+1} + (z_{t+1} - A_{z,t+1} z_{t})^T Q_{z,t+1}^{-1} (z_{t+1} - A_{z,t+1} z_{t}) \nonumber \\
+       &   & \qquad \qquad \qquad \qquad + \: (u_{t+1} - A_{u,t+1} z_{t})^T Q_{u,t+1}^{-1} (u_{t+1} - A_{u,t+1} z_{t}) \nonumber \\
+       & = & z_{t+1}^T \left[ \Omega_{t+1} + Q_{z,t+1}^{-1} \right] z_{t+1} - 2 \left[ \lambda_{t+1}^T + z_{t}^T A_{z,t+1}^T Q_{z,t+1}^{-1} \right] z_{t+1} \nonumber \\
+       &   & \qquad + \: \left[ z_{t}^T A_{z,t+1}^T Q_{z,t+1}^{-1} A_{z,t+1} z_{t} + (u_{t+1} - A_{u,t+1} z_{t})^T Q_{u,t+1}^{-1} (u_{t+1} - A_{u,t+1} z_{t}) \right] \IEEEeqnarraynumspace     ,
+\end{IEEEeqnarray}
+
+and,
+%
+\begin{IEEEeqnarray}{rCl}
+ \xi & = & z_{t}^T A_{z,t+1}^T Q_{z,t+1}^{-1} A_{z,t+1} z_{t} + (u_{t+1} - A_{u,t+1} z_{t})^T Q_{u,t+1}^{-1} (u_{t+1} - A_{u,t+1} z_{t}) \nonumber \\
+     &   & - \: \left[ \lambda_{t+1}^T + z_{t}^T A_{z,t+1}^T Q_{z,t+1}^{-1} \right] \left[ \Omega_{t+1} + Q_{z,t+1}^{-1} \right]^{-1} \left[ \lambda_{t+1} + Q_{z,t+1}^{-1} A_{z,t+1} z_{t} \right] \nonumber \\
+     & = & z_{t}^T \left[ A_{z,t+1}^T \left( Q_{z,t+1}^{-1} - Q_{z,t+1}^{-1} \left(Q_{z,t+1}^{-1}+\Omega_{t+1}\right)^{-1}  Q_{z,t+1}^{-1} \right) A_{z,t+1} + A_{u,t+1}^T Q_{u,t+1}^{-1} A_{u,t+1} \right] z_{t} \nonumber \\
+     &   & - \: 2 \left[ \lambda_{t+1}^T \left(Q_{z,t+1}^{-1}+\Omega_{t+1}\right)^{-1} Q_{z,t+1}^{-1} A_{z,t+1} + u_{t+1}^T Q_{u,t+1}^{-1} A_{u,t+1} \right] z_{t} \nonumber \\
+     &   & - \: \left[ \lambda_{t+1}^T \left(Q_{z,t+1}^{-1}+\Omega_{t+1}\right)^{-1} \lambda_{t+1}  + u_{t+1}^T Q_{u,t+1}^{-1} u_{t+1} \right]     .
+\end{IEEEeqnarray}
+
+Hence the prediction recursions are,
+%
+\begin{IEEEeqnarray}{rCl}
+ \hat{\Omega}_t  & = & A_{z,t+1}^T \left( Q_{z,t+1}^{-1} - Q_{z,t+1}^{-1} \left(z,Q_{t+1}^{-1}+\Omega_{t+1}\right)^{-1}  Q_{z,t+1}^{-1} \right) A_{z,t+1} + A_{u,t+1}^T Q_{u,t+1}^{-1} A_{u,t+1} \\
+ \hat{\lambda}_t & = & A_{z,t+1}^T Q_{z,t+1}^{-1} \left(Q_{z,t+1}^{-1}+\Omega_{t+1}\right)^{-1} \lambda_{t+1} + A_{u,t+1}^T Q_{u,t+1}^{-1} u_{t+1} \\
+ \hat{Z}_t       & = & Z_{t+1} \sqrt{\frac{\left| \left| \left(Q_{z,t+1}^{-1}+\Omega_{t+1}\right)^{-1} \right| \right|}{\left|\left| 2 \pi Q_{z,t+1} \right|\right| \left|\left| 2 \pi Q_{u,t+1} \right|\right|}} \nonumber \\
+                 &   & \qquad \times \exp\left\{ -\frac{1}{2} \left[ \lambda_{t+1}^T \left(Q_{z,t+1}^{-1}+\Omega_{t+1}\right)^{-1} \lambda_{t+1}  + u_{t+1}^T Q_{u,t+1}^{-1} u_{t+1} \right] \right\}     .
+\end{IEEEeqnarray}
+
+Note that unlike hierarchical model, these all depend on $u_t$ through the matrices $A_{z,t}$, $A_{u,t}$, $Q_{z,t}$, $Q_{u,t}$, so we will need to run a backward filter for every particle in the filter distribution (or at least, every one which we propose if we use rejection or MH sampling).
+
+Update (this is identical to the hierarchical model):
+%
+\begin{IEEEeqnarray}{rCl}
+ \IEEEeqnarraymulticol{3}{l}{ p(y_{t:T}, u_{t+1:T}|z_t, u_t) = p(y_{t+1:T}, u_{t+1:T}|z_t, u_t) p(y_{t}|z_t, u_{t}) } \nonumber \\
+ & = & \hat{Z}_t \frac{1}{\sqrt{ \left|\left| 2 \pi R_{t} \right|\right| }} \exp\left\{ -\frac{1}{2} \omega \right\}     ,
+\end{IEEEeqnarray}
+
+where,
+%
+\begin{IEEEeqnarray}{rCl}
+ \omega & = & z_t^T \hat{\Omega}_t z_t - 2 \hat{\lambda}_t^T z_t + (y_t - C_t z_t)^T R_t^{-1} (y_t - C_t z_t) \nonumber \\
+        & = & z_t^T \left[ \hat{\Omega}_t + C_t^T R_t^{-1} C_t \right] z_t - 2 \left[ \hat{\lambda}_t^T + y_t^T C_t^T R_t^{-1} \right] z_t + \left[ y_t^T R_t^{-1} y_t \right]     .
+\end{IEEEeqnarray}
+
+Hence the update recursions are,
+%
+\begin{IEEEeqnarray}{rCl}
+ \Omega_t  & = & \hat{\Omega}_t + C_t^T R_t^{-1} C_t \\
+ \lambda_t & = & \hat{\lambda}_t + R_t^{-1} C_t y_t \\
+ Z_t       & = & \hat{Z}_t \frac{1}{\sqrt{ \left|\left| 2 \pi R_{t} \right|\right| }} \exp\left\{ -\frac{1}{2} y_t^T R_t^{-1} y_t \right\}      .
+\end{IEEEeqnarray}
+
+Finally, the initialisation. This requires the observation that when $t=T$, $p(y_{t:T}, u_{t+1:T} | z_t, u_t) = p(y_T | z_T, u_T)$. But then it's identical to the hierarchical model.
+%
+\begin{IEEEeqnarray}{rCl}
+ p(y_T | z_T, u_T) & = & \mathcal{N}(y_T | C_T z_T, R_T) \nonumber \\
+                   & = & \frac{1}{\sqrt{ \left|\left| 2 \pi R_{T} \right|\right| }} \exp\left\{ -\frac{1}{2} (y_T - C_T z_T)^T R_T^{-1} (y_T - C_T z_T) \right\} \nonumber \\
+                   & = & \frac{1}{\sqrt{ \left|\left| 2 \pi R_{T} \right|\right| }} \exp\left\{ -\frac{1}{2} y_T R_T^{-1} y_T \right\} \exp\left\{ z_T^T C_T^T R_T^{-1} C_T z_T - 2 (y_T^T R_T^{-1} C_T) z_T) \right\}     .
+\end{IEEEeqnarray}
+
+Hence,
+\begin{IEEEeqnarray}{rCl}
+ \Omega_T  & = & C_T^T R_T^{-1} C_T \nonumber \\
+ \lambda_T & = & C_T^T R_T^{-1} y_T \nonumber \\
+ Z_T       & = & \frac{1}{\sqrt{ \left|\left| 2 \pi R_{T} \right|\right| }} \exp\left\{ -\frac{1}{2} y_T R_T^{-1} y_T \right\}     .
+\end{IEEEeqnarray}
+
+All done.
+
+
+
+\end{document} 

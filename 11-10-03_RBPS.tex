@@ -1,0 +1,188 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{IEEEtrantools}
+
+\title{Rao-Blackwellised Particle Smoothing by Resampling}
+\author{Pete Bunch}
+
+\begin{document}
+
+\maketitle
+
+With smoothing, we would like to estimate
+
+\begin{equation}
+P(z_{1:T}, u_{1:T}|y_{1:T}) = P(z_{1:T}| u_{1:T}, y_{1:T}) P(u_{1:T}|y_{1:T})
+\end{equation}
+
+where $z_{1:T}$ and $u_{1:T}$ are the linear and nonlinear parts of the state respectively.
+
+The nonlinear portion of this can be expressed in the following form:
+
+\begin{equation}
+P(u_{1:T}|y_{1:T}) = P(u_T|y_{1:T}) \prod_{t=1}^{T-1} P(u_t|u_{t+1:T}, y_{1:T})
+\end{equation}
+
+which suggests a backwards sequential sampling approach. The factors may be expanced as
+
+\begin{IEEEeqnarray}{rCl}
+P(u_t|u_{t+1:T}, y_{1:T}) & = & \int P(u_{1:t}, z_t|u_{t+1:T}, y_{1:T}) dz_t du_{1:t-1} \nonumber \\
+ & = & \int \frac{ P(y_{t+1:T}|z_t, u_{1:T}, y_{1:t}) P(u_{1:t}, z_t| u_{t+1:T}, y_{1:t}) }{ P(y_{t+1:T}|u_{t+1:T}, y_{1:t}) } dz_t du_{1:t-1} \nonumber \\
+ & = & \int \frac{ P(y_{t+1:T}|z_t, u_{t+1:T}) P(u_{1:t}, z_t| u_{t+1}, y_{1:t}) }{ P(y_{t+1:T}|u_{t+1:T}, y_{1:t}) } dz_t du_{1:t-1} \nonumber \\
+ & = & \int \frac{ P(y_{t+1:T}|z_t, u_{t+1:T}) P(u_{t+1}|u_{1:t}, z_t, y_{1:t}) P(z_t, u_{1:t}|y_{1:t}) }{ P(y_{t+1:T}|u_{t+1:T}, y_{1:t}) P(u_{t+1}|y_{1:t}) } dz_t du_{1:t-1} \nonumber \\
+ & = & \int \frac{ P(y_{t+1:T}|z_t, u_{t+1:T}) P(u_{t+1}|u_{t}) P(z_t|u_{1:t}, y_{1:t}) P(u_{1:t}|y_{1:t}) }{ P(y_{t+1:T}|u_{t+1:T}, y_{1:t}) P(u_{t+1}|y_{1:t}) } dz_t du_{1:t-1} \nonumber \\
+ & = & \frac{ \int P(u_{1:t}|y_{1:t}) P(u_{t+1}|u_{t}) \int P(z_t|u_{1:t}, y_{1:t}) P(y_{t+1:T}|z_t, u_{t+1:T}) dz_t du_{1:t-1} }{ P(y_{t+1:T}|u_{t+1:T}, y_{1:t}) P(u_{t+1}|y_{1:t}) } \IEEEeqnarraynumspace
+\end{IEEEeqnarray}
+
+Running a Rao-Blackwellised particle filter gives us an estimate of
+
+\begin{equation}
+P(u_{1:t}|y_{1:t}) \approx \sum_i w_t^{(i)} \delta_{u_{1:t}^{(i)}}(u_{1:t})
+\end{equation}
+
+Substituting this in, particles may be drawn from the smoothing distribution by sequentially sampling
+
+\begin{IEEEeqnarray}{rCl}
+P(u_t|u_{t+1:T}^{(j)}, y_{1:T}) & \propto &  \int P(u_{1:t}|y_{1:t}) P(u_{t+1}^{(j)}|u_{t}) \int P(z_t|u_{1:t}, y_{1:t}) P(y_{t+1:T}|z_t, u_{t+1:T}^{(j)}) dz_t du_{1:t-1} \nonumber \\
+ & \approx & \int \sum_i w_t^{(i)} \delta_{u_{1:t}^{(i)}}(u_{1:t}) P(u_{t+1}^{(j)}|u_{t}) \int P(z_t|u_{1:t}, y_{1:t}) P(y_{t+1:T}|z_t, u_{t+1:T}^{(j)}) dz_t du_{1:t-1} \nonumber \\
+ & = & \sum_i w_t^{(i)} P(u_{t+1}^{(j)}|u_{t}^{(i)}) \int P(z_t|u_{1:t}^{(i)}, y_{1:t}) P(y_{t+1:T}|z_t, u_{t+1:T}^{(j)}) dz_t \: \delta_{u_{t}^{(i)}}(u_{t}) \nonumber \\
+ & = & \sum_i \rho^{(i)} \delta_{u_{t}^{(i)}}(u_{t})
+\end{IEEEeqnarray}
+
+where
+
+\begin{equation}
+\rho^{(i)} \propto w_t^{(i)} P(u_{t+1}^{(j)}|u_{t}^{(i)}) \int P(z_t|u_{1:t}^{(i)}, y_{1:t}) P(y_{t+1:T}|z_t, u_{t+1:T}^{(j)}) dz_t
+\end{equation}
+
+The first term in the integral is given by the forward Kalman filter estimate from the forward stage.
+
+\begin{equation}
+P(z_t|u_{1:t}^{(i)}, y_{1:t}) = \mathcal{N}( z_t|\mu_t^{(i)}, \Sigma_t^{(i)} )
+\end{equation}
+
+The second term is given by a backward filter in the style of the two-filter smoother
+
+\begin{equation}
+P(y_{t+1:T}|z_t, u_{t+1:T}^{(j)}) = \hat{Z}_{t}^{(j)} \mathcal{N}( z_{t}|\hat{m}_t^{(j)}, \hat{S}_t^{(j)} )
+\end{equation}
+
+The integral is then given by
+
+\begin{IEEEeqnarray}{rCl}
+\IEEEeqnarraymulticol{3}{l}{\int P(z_t|u_{1:t}^{(i)}, y_{1:t}) P(y_{t+1:T}|z_t, u_{t+1:T}^{(j)}) dz_t } \nonumber \\
+\qquad \qquad & = & \hat{Z}_{t}^{(j)} \int \mathcal{N}( z_t|\mu_t^{(i)}, \Sigma_t^{(i)} ) \mathcal{N}( z_{t}|\hat{m}_t^{(j)}, \hat{S}_t^{(j)} ) dz_t \nonumber \\
+ & = & \hat{Z}_{t}^{(j)} \mathcal{N}( \mu_{t}^{(i)}|\hat{m}_t^{(j)}, \Sigma_t^{(i)} + \hat{S}_t^{(j)} )
+\end{IEEEeqnarray}
+
+which uses the product of Gaussians formula. Thus the backward sampling weights are given by
+
+\begin{equation}
+\rho^{(i)} \propto w_t^{(i)} P(u_{t+1}^{(j)}|u_{t}^{(i)}) \hat{Z}_{t}^{(j)} \mathcal{N}( \mu_{t}^{(i)}|\hat{m}_t^{(j)}, \Sigma_t^{(i)} + \hat{S}_t^{(j)} )
+\end{equation}
+
+The normalisation factor $\hat{Z}_{t}^{(j)}$ is constant over the sampling index $i$, and may thus be ommited (comes out in the normalisation). It may be useful for reweighting-type smoothers.
+
+It only remains to calculate the backward filter estimate. These are given by a recursion.
+
+\begin{IEEEeqnarray}{rCl}
+P(y_{t:T}|z_t, u_{t:T}) & = & Z_t \mathcal{N}( z_t|m_t, S_t ) \\
+P(y_{t+1:T}|z_t, u_{t+1:T}) & = & \hat{Z}_t \mathcal{N}( z_t|\hat{m}_t, \hat{S}_t )
+\end{IEEEeqnarray}
+
+The following use the Gaussian product formulas and the Gaussian change of variable formula.
+
+Predict:
+
+\begin{IEEEeqnarray}{rCl}
+\IEEEeqnarraymulticol{3}{l}{ P(y_{t+1:T}|z_t, u_{t+1:T}) } \nonumber \\
+\qquad \qquad & = & \int P(Y_{t+1}|z_{t+1}, u_{t+1:T}) P(z_{t+1}|u_{t+1}, z_t) dz_{t+1} \nonumber \\
+ & = & Z_{t+1} \int \mathcal{N}( z_{t+1}|m_{t+1}, S_t ) \mathcal{N}( z_{t+1}|A_t z_t, Q_{t+1} ) \nonumber \\
+ & = & Z_{t+1} \mathcal{N}( m_{t+1}|A_t z_t, S_{t+1}+Q_{t+1} ) \nonumber \\
+ & = & Z_{t+1} \left| A_t^{-1} \right| \mathcal{N}( z_t|A_t^{-1} m_{t+1}, A_t^{-1}(S_{t+1}+Q_{t+1})A_t^{-T} )
+\end{IEEEeqnarray}
+
+Thus:
+
+\begin{IEEEeqnarray}{rCl}
+\hat{m}_t & = & A_t^{-1} m_{t+1} \\
+\hat{S}_t & = & A_t^{-1} (S_{t+1}+Q_{t+1}) A_t^{-T} \\
+\hat{Z}_t & = & Z_{t+1} \left| A_t \right|^{-1}
+\end{IEEEeqnarray}
+
+Update:
+
+\begin{IEEEeqnarray}{rCl}
+\IEEEeqnarraymulticol{3}{l}{ P(y_{t:T}|z_t, u_{t:T}) } \nonumber \\
+\qquad \qquad & = & P(y_{t+1:T}|z_t, u_{t+1:T}) P(y_t|z_t, u_t) \nonumber \\
+ & = & \hat{Z}_{t} \mathcal{N}( z_t|\hat{m}_t, \hat{S}_t ) \mathcal{N}( y_t|C_t z_t, R_t ) \nonumber \\
+ & = & \hat{Z}_{t} \mathcal{N}( y_t|C_t \hat{m}_t, P_t ) \mathcal{N}( z_t|m_t, S_t )
+\end{IEEEeqnarray}
+
+where:
+
+\begin{IEEEeqnarray}{rCl}
+P_t & = & C_t \hat{S}_t C_t^T + R_t \\
+K_t & = & \hat{S}_t C_t^T P_t^{-1} \\
+m_t & = & \hat{m}_t + K_t (y_t - C_t \hat{m}_t) \\
+S_t & = & \hat{S}_t - K_t P_t K_t^T \\
+Z_t & = & \hat{Z}_t \mathcal{N}( y_t|C_t \hat{m}_t, P_t )
+\end{IEEEeqnarray}
+
+Finally we need to consider the initialisation of the two filter smoother. At time $T$, the joint likelihood is given by
+
+\begin{equation}
+P(y_{T}|z_T, u_{T}) = \mathcal{N}( y_T|C_T z_T, R_T )
+\end{equation}
+
+which cannot be inverted because $C_t$ is generally not square and full rank. If we wait a few steps then the set of observations can be written as
+
+\begin{multline}
+\begin{bmatrix}y_T \\ y_{T-1} \\ \vdots \\ y_{t+1} \\ y_{t}\end{bmatrix}
+ = \underbrace{  \begin{bmatrix}C_T \prod_{k=t}^{T-1} A_k \\ C_{T-1} \prod_{k=t}^{T-2} A_k \\ \vdots \\ C_{t+1} A_t \\ C_{t} \end{bmatrix}  }_{H_t} x_{t}
+ + \underbrace{  \begin{bmatrix}C_T & C_T A_{T-1} & \hdots & C_T \prod_{k=t+1}^{T-1} A_k \\ 0 & C_{T-1} & \hdots & C_{T-1} \prod_{k=t+1}^{T-2} A_k \\ \vdots & \vdots & \ddots & \vdots \\ 0 & 0 & \hdots & C_{t+1} \\ 0 & 0 & \hdots & 0\end{bmatrix}  }_{K_t} \begin{bmatrix}w_{T-1} \\ w_{T-2} \\ \vdots \\ w_{t+1}\end{bmatrix} \\
+ + \begin{bmatrix}I & 0 & \hdots & 0 & 0\\ 0 & I & \hdots & 0 & 0 \\ \vdots & \vdots & \ddots & \vdots & \vdots \\ 0 & 0 & \hdots & I & 0 \\ 0 & 0 & \hdots & 0 & I \end{bmatrix} \begin{bmatrix}v_T \\ v_{T-1} \\ \vdots \\ v_{t+1} \\ v_{t}\end{bmatrix}
+\end{multline}
+Thus
+
+\begin{equation}
+P(y_{t:T}|Z_t, u_{t:T}) = \mathcal{N}( \underline{y}_t|H_t x_t, V_t )
+\end{equation}
+
+where
+
+\begin{equation}
+V_t = K_t \begin{bmatrix}Q_T & 0 & \hdots & 0\\ 0 & Q_{T-1} & \hdots & 0\\ \vdots & \vdots & \ddots & \vdots\\ 0 & 0 & \hdots & Q_{t+1} \end{bmatrix} K_t^T + \begin{bmatrix}R_T & 0 & \hdots & 0 & 0\\ 0 & R_{T-1} & \hdots & 0 & 0 \\ \vdots & \vdots & \ddots & \vdots & \vdots \\ 0 & 0 & \hdots & R_{t+1} & 0 \\ 0 & 0 & \hdots & 0 & R_t \end{bmatrix}
+\end{equation}
+
+This can be inverted once $T-t$ becomes large enough.
+
+\begin{IEEEeqnarray}{rCl}
+P(y_{t:T}|Z_t, u_{t:T}) & = & \frac{ \left| \Lambda_t \right|^{1/2} }{ \left| V_t \right|^{1/2} } \exp\{-\frac{1}{2}[ \underline{y}_t^T ( V_t^{-1}-V_t^{-1} H_t \Lambda_t H_t^T V_t^{-1} ) \underline{y}_t ]\} \mathcal{N}( x_t|\nu_t, \Lambda_t ) \\
+ & = & \frac{ \left| \Lambda_t \right|^{1/2} }{ \left| V_t \right|^{1/2} } \mathcal{N}( x_t|\nu_t, \Lambda_t )
+\end{IEEEeqnarray}
+
+with
+
+\begin{IEEEeqnarray}{rCl}
+\Lambda_t & = & [H_t^T V_t^{-1} H_t]^{-1} \\
+\nu_t & = & \Lambda_t H_t^T V_t^{-1} \underline{y}_t
+\end{IEEEeqnarray}
+
+Before the backward filter recursion begins, the backwards sampling weights are given by
+
+\begin{IEEEeqnarray}{rCl}
+\IEEEeqnarraymulticol{3}{l}{\int P(z_t|u_{1:t}^{(i)}, y_{1:t}) P(y_{t+1:T}|z_t, u_{t+1:T}^{(j)}) dz_t } \nonumber \\
+\qquad \qquad & = & \int \mathcal{N}( z_t|\mu_t^{(i)}, \Sigma_t^{(i)} ) \mathcal{N}( \underline{y}_{t+1}|\hat{H}_t x_{t}^{(j)}, \hat{V}_t ) dz_t \nonumber \\
+ & = & \mathcal{N}( \underline{y}_{t+1}|\hat{H}_t \mu_t^{(i)}, \hat{H}_t \Sigma_t^{(i)} \hat{H}_t^T + \hat{V}_t )
+\end{IEEEeqnarray}
+
+where
+
+\begin{IEEEeqnarray}{rCl}
+\hat{H}_t & = & H_{t+1}^{(j)} A_{t}^{(i)} \\
+\hat{V}_t & = & V_{t+1}^{(j)} + H_{t+1}^{(j)} Q_{t+1}^{(j)} H_{t+1}^{(j)T}
+\end{IEEEeqnarray}
+
+\end{document} 
