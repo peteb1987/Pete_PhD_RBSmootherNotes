@@ -398,7 +398,81 @@ Hence,
  Z_T       & = & \left|\left| 2 \pi R_{T} \right|\right|^{-\frac{1}{2}} \exp\left\{ -\frac{1}{2} y_T R_T^{-1} y_T \right\}     .
 \end{IEEEeqnarray}
 
-All done.
+\section{Further Generalisations}
+
+I think from here it's a simple step to generalise to the ``full model'' in [Sch\"on et al. 2005] in which the equations for both $z_{t+1}$ and $u_{t+1}$ also contain a nonlinear function of $u_t$. This is, after all, just a deterministic shift in the mean when conditioned on $u_t$.
+
+More interestingly is the case when $q_{z,t}$ and $q_{u,t}$ are correlated, which we examine here,
+%
+\begin{IEEEeqnarray}{rCl}
+  u_{t+1} &=& A_u(u_t) z_t + q_{u,t} \nonumber \\
+  z_{t+1} &=& A_z(u_t) z_t + q_{z,t} \nonumber \\
+  q_{t} & = & \begin{bmatrix}q_{z,t} \\ q_{u,t} \end{bmatrix} \sim \mathcal{N}(\cdot|0,Q_t)     .
+\end{IEEEeqnarray}
+
+First partition $Q_t$,
+%
+\begin{IEEEeqnarray}{rCl}
+ Q_t & = & \begin{bmatrix} Q_{z,t} & Q_{C,t} \\ Q_{C,t}^T & Q_{u,t} \end{bmatrix}      ,
+\end{IEEEeqnarray}
+
+in the obvious way. Now factorise it,
+%
+\begin{IEEEeqnarray}{rCl}
+ Q_t & = & F_t F_t^T     ,
+\end{IEEEeqnarray}
+
+and partition the factors as well,
+%
+\begin{IEEEeqnarray}{rCl}
+ F_t & = & \begin{bmatrix} F_{z,t} \\ F_{u,t} \end{bmatrix}    ,
+\end{IEEEeqnarray}
+
+such that we now have,
+%
+\begin{IEEEeqnarray}{rCl}
+ Q_t & = & \begin{bmatrix} F_{z,t} F_{z,t}^T & F_{z,t} F_{u,t}^T \\ F_{u,t} F_{z,t}^T & F_{u,t} F_{u,t}^T \end{bmatrix}     .
+\end{IEEEeqnarray}
+
+Now we can write the joint density of $z_{t+1}, u_{t+1} | z_{t}, u_{t}$ using the integral trick (no assumptions yet about the invertibility of $Q_t$ or its sub-matrices),
+%
+\begin{IEEEeqnarray}{rCl}
+ p(z_{t+1}, u_{t+1} | z_{t}, u_{t}) & = & \int \delta_{A_{z,t} z_t + F_{z,t} \epsilon}(z_{t+1}) \delta_{A_{u,t} z_t + F_{u,t} \epsilon}(u_{t+1}) \mathcal{N}(\epsilon|0,I) d\epsilon     .
+\end{IEEEeqnarray}
+
+Substituting this into the prediction equation integral gives us,
+%
+\begin{IEEEeqnarray}{rCl}
+ \IEEEeqnarraymulticol{3}{l}{ p(y_{t+1:T}, u_{t+1:T}|z_t, u_t) = \int p(y_{t+1:T}, u_{t+2:T}|z_{t+1}, u_{t+1}) p(z_{t+1}, u_{t+1} | z_t, u_{t}) dz_{t+1}} \nonumber \\
+ & = & Z_{t+1}  \int \int \exp\left\{ -\frac{1}{2} \left[ z_{t+1}^T \Omega_{t+1} z_{t+1} - 2 \lambda_{t+1}^T z_{t+1} \right] \right\} \delta_{A_{z,t} z_t + F_{z,t} \epsilon}(z_{t+1}) \delta_{A_{u,t} z_t + F_{u,t} \epsilon}(u_{t+1}) \mathcal{N}(\epsilon|0,I) d\epsilon dz_{t+1} \nonumber \\
+  & = & Z_{t+1} \left| \left| 2 \pi \right| \right|^{-\frac{1}{2}} \int \exp\left\{ -\frac{1}{2} \zeta \right\} \delta_{A_{u,t} z_t + F_{u,t} \epsilon}(u_{t+1}) d\epsilon \nonumber \\
+  & = & Z_{t+1} \left| \left| 2 \pi \right| \right|^{-\frac{1}{2}} \left| \left| F_{u,t}^T F_{u,t} \right| \right|^{-\frac{1}{2}} \exp\left\{ -\frac{1}{2} \xi \right\} \nonumber \\
+\end{IEEEeqnarray}
+
+where,
+%
+\begin{IEEEeqnarray}{rCl}
+ \zeta & = & \left(A_{z,t} z_t + F_{z,t} \epsilon\right)^T \Omega_{t+1} \left(A_{z,t} z_t + F_{z,t} \epsilon\right) - 2 \lambda_{t+1}^T \left(A_{z,t} z_t + F_{z,t} \epsilon\right) + \epsilon^T \epsilon \nonumber \\
+       & = & \epsilon^T \left[ F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right] \epsilon \nonumber \\
+       &   & - \: 2 \left[ \lambda_{t+1}^T F_{z,t} - z_t^T A_{z,t}^T \Omega_{t+1} F_{z,t} \right] \epsilon \nonumber \\
+       &   & + \: \left[ z_t^T A_{z,t}^T \Omega_{t+1} A_{z,t} z_t - 2 \lambda_{t+1}^T A_{z,t} z_t \right]     ,
+\end{IEEEeqnarray}
+
+\begin{IEEEeqnarray}{rCl}
+ \xi & = & \left[ z_t^T A_{z,t}^T \Omega_{t+1} A_{z,t} z_t - 2 \lambda_{t+1}^T A_{z,t} z_t \right] \nonumber \\
+     &   & + \: (u_{t+1} - A_{u,t} z_t)^T \left[ F_{u,t} \left( F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right)^{-1} F_{u,t}^T \right]^{-1} (u_{t+1} - A_{u,t} z_t) \nonumber \\
+     &   & - \: 2 \left[ \left[ \lambda_{t+1}^T F_{z,t} - z_t^T A_{z,t}^T \Omega_{t+1} F_{z,t} \right] \left(F_{u,t}^T F_{u,t}\right)^{-1} F_{u,t}^T \right] (u_{t+1} - A_{u,t} z_t) \nonumber \\
+     & = & z_t^T \left[ A_{z,t}^T \Omega_{t+1} A_{z,t} + A_{u,t}^T \left[ F_{u,t} \left( F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right)^{-1} F_{u,t}^T \right]^{-1} A_{u,t} - 2 A_{z,t}^T \Omega_{t+1} F_{z,t} \left(F_{u,t}^T F_{u,t}\right)^{-1} F_{u,t}^T A_{u,t} \right] z_t \nonumber \\  % 3 terms here
+     &   & - \: 2 \left[ \lambda_{t+1}^T A_{z,t} - u_{t+1}^T \left[ F_{u,t} \left( F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right)^{-1} F_{u,t}^T \right]^{-1} A_{u,t} + \lambda_{t+1}^T F_{z,t} \left(F_{u,t}^T F_{u,t}\right)^{-1} F_{u,t}^T A_{u,t} + u_{t+1} F_{u,t} \left(F_{u,t}^T F_{u,t}\right)^{-1} F_{z,t}^T \Omega_{t+1} A_{z,t} \right] z_t \nonumber \\  % 4 terms here
+     &   & + \: \left[ u_{t+1}^T \left[ F_{u,t} \left( F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right)^{-1} F_{u,t}^T \right]^{-1} u_{t+1} - 2 \lambda_{t+1}^T F_{z,t} \left(F_{u,t}^T F_{u,t}\right)^{-1} F_{u,t}^T u_{t+1} \right]     .  % 2 terms here, which makes 9 in total. Good.
+\end{IEEEeqnarray}
+
+HANG ON! $F_{u,t}^T F_{u,t}$ is not invertible. This needs rethinking.
+
+We can only evaluate the term $\left[ F_{u,t} \left( F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right)^{-1} F_{u,t}^T \right]^{-1}$ if $F_{u,t}$ is full rank. This equates to requiring $Q_{u,t}$ to be full rank. With this condition imposed, the expression above simplifies somewhat,
+%
+
+
 
 
 
