@@ -354,7 +354,7 @@ Hence the prediction recursions are,
 %
 \begin{IEEEeqnarray}{rCl}
  \hat{\Omega}_t  & = & A_{z,t}^T \left( \Omega_{t+1} - \Omega_{t+1} F_{z,t} \left( F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right)^{-1} F_{z,t}^T \Omega_{t+1} \right) A_{z,t} + A_{u,t}^T Q_{u,t}^{-1} A_{u,t} \\
- \hat{\lambda}_t & = & \lambda_{t+1}^T \left( I - F_{z,t} \left( F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right)^{-1} F_{z,t}^T \Omega_{t+1} \right) A_{z,t} + u_{t+1}^T Q_{u,t}^{-1} A_{u,t} \\
+ \hat{\lambda}_t & = & A_{z,t}^T \left( I - F_{z,t} \left( F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right)^{-1} F_{z,t}^T \Omega_{t+1} \right) \lambda_{t+1} + A_{u,t}^T Q_{u,t}^{-1} u_{t+1} \\
  \hat{Z}_t       & = & Z_{t+1} \left|\left| 2 \pi Q_{u,t} \right|\right|^{-\frac{1}{2}} \left|\left| \left( F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right) \right|\right|^{-\frac{1}{2}} \nonumber \\
                  &   & \times \exp\left\{ -\frac{1}{2} \left[ - \lambda_{t+1}^T F_{z,t} \left( F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right)^{-1} F_{z,t}^T \lambda_{t+1} + u_{t+1}^T Q_{u,t}^{-1} u_{t+1} \right] \right\}     .
 \end{IEEEeqnarray}
@@ -445,8 +445,9 @@ Substituting this into the prediction equation integral gives us,
 \begin{IEEEeqnarray}{rCl}
  \IEEEeqnarraymulticol{3}{l}{ p(y_{t+1:T}, u_{t+1:T}|z_t, u_t) = \int p(y_{t+1:T}, u_{t+2:T}|z_{t+1}, u_{t+1}) p(z_{t+1}, u_{t+1} | z_t, u_{t}) dz_{t+1}} \nonumber \\
  & = & Z_{t+1}  \int \int \exp\left\{ -\frac{1}{2} \left[ z_{t+1}^T \Omega_{t+1} z_{t+1} - 2 \lambda_{t+1}^T z_{t+1} \right] \right\} \delta_{A_{z,t} z_t + F_{z,t} \epsilon}(z_{t+1}) \delta_{A_{u,t} z_t + F_{u,t} \epsilon}(u_{t+1}) \mathcal{N}(\epsilon|0,I) d\epsilon dz_{t+1} \nonumber \\
-  & = & Z_{t+1} \left| \left| 2 \pi \right| \right|^{-\frac{1}{2}} \int \exp\left\{ -\frac{1}{2} \zeta \right\} \delta_{A_{u,t} z_t + F_{u,t} \epsilon}(u_{t+1}) d\epsilon \nonumber \\
-  & = & Z_{t+1} \left| \left| 2 \pi \right| \right|^{-\frac{1}{2}} \left| \left| F_{u,t}^T F_{u,t} \right| \right|^{-\frac{1}{2}} \exp\left\{ -\frac{1}{2} \xi \right\} \nonumber \\
+  & = & Z_{t+1} \left| \left| 2 \pi I \right| \right|^{-\frac{1}{2}} \int \exp\left\{ -\frac{1}{2} \zeta \right\} \delta_{A_{u,t} z_t + F_{u,t} \epsilon}(u_{t+1}) d\epsilon \nonumber \\
+  & = & Z_{t+1} \left| \left| 2 \pi I \right| \right|^{-\frac{1}{2}} \left| \left| 2 \pi \left(F_{z,t}^T \Omega_{t+1} F_{z,t} + I\right)^{-1} \right| \right|^{\frac{1}{2}} \left| \left| 2 \pi \left(F_{u,t} \left(F_{z,t}^T \Omega_{t+1} F_{z,t} + I\right)^{-1} F_{u,t}^T\right) \right| \right|^{-\frac{1}{2}} \exp\left\{ -\frac{1}{2} \xi \right\} \nonumber \\
+  & = & Z_{t+1} \left| \left| 2 \pi I \right| \right|^{-\frac{1}{2}} \frac{ \left| \left| \Psi_t \right| \right|^{\frac{1}{2}} }{ \left| \left|\left(F_{u,t} \Psi_t F_{u,t}^T\right) \right| \right|^{\frac{1}{2}} }     \exp\left\{ -\frac{1}{2} \xi \right\}
 \end{IEEEeqnarray}
 
 where,
@@ -459,21 +460,53 @@ where,
 \end{IEEEeqnarray}
 
 \begin{IEEEeqnarray}{rCl}
- \xi & = & \left[ z_t^T A_{z,t}^T \Omega_{t+1} A_{z,t} z_t - 2 \lambda_{t+1}^T A_{z,t} z_t \right] \nonumber \\
-     &   & + \: (u_{t+1} - A_{u,t} z_t)^T \left[ F_{u,t} \left( F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right)^{-1} F_{u,t}^T \right]^{-1} (u_{t+1} - A_{u,t} z_t) \nonumber \\
-     &   & - \: 2 \left[ \left[ \lambda_{t+1}^T F_{z,t} - z_t^T A_{z,t}^T \Omega_{t+1} F_{z,t} \right] \left(F_{u,t}^T F_{u,t}\right)^{-1} F_{u,t}^T \right] (u_{t+1} - A_{u,t} z_t) \nonumber \\
-     & = & z_t^T \left[ A_{z,t}^T \Omega_{t+1} A_{z,t} + A_{u,t}^T \left[ F_{u,t} \left( F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right)^{-1} F_{u,t}^T \right]^{-1} A_{u,t} - 2 A_{z,t}^T \Omega_{t+1} F_{z,t} \left(F_{u,t}^T F_{u,t}\right)^{-1} F_{u,t}^T A_{u,t} \right] z_t \nonumber \\  % 3 terms here
-     &   & - \: 2 \left[ \lambda_{t+1}^T A_{z,t} - u_{t+1}^T \left[ F_{u,t} \left( F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right)^{-1} F_{u,t}^T \right]^{-1} A_{u,t} + \lambda_{t+1}^T F_{z,t} \left(F_{u,t}^T F_{u,t}\right)^{-1} F_{u,t}^T A_{u,t} + u_{t+1} F_{u,t} \left(F_{u,t}^T F_{u,t}\right)^{-1} F_{z,t}^T \Omega_{t+1} A_{z,t} \right] z_t \nonumber \\  % 4 terms here
-     &   & + \: \left[ u_{t+1}^T \left[ F_{u,t} \left( F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right)^{-1} F_{u,t}^T \right]^{-1} u_{t+1} - 2 \lambda_{t+1}^T F_{z,t} \left(F_{u,t}^T F_{u,t}\right)^{-1} F_{u,t}^T u_{t+1} \right]     .  % 2 terms here, which makes 9 in total. Good.
+ \xi & = & \left[ z_t^T A_{z,t}^T \Omega_{t+1} A_{z,t} z_t - 2 \lambda_{t+1}^T A_{z,t} z_t \right] \nonumber \\  % 2 terms
+     &   & - \: \left[ \lambda_{t+1}^T F_{z,t} - z_t^T A_{z,t}^T \Omega_{t+1} F_{z,t} \right] \Psi_t \left[ F_{z,t}^T \lambda_{t+1} - F_{z,t}^T \Omega_{t+1} A_{z,t} z_t \right] \nonumber \\  % 3 terms
+     &   & + \: \left[ u_{t+1} - A_{u,t} z_t - F_{u,t} \Psi_t \left( F_{z,t}^T \lambda_{t+1} - F_{z,t}^T \Omega_{t+1} A_{z,t} z_t \right) \right]^T \nonumber \\ % 3 terms
+     &   & \qquad \times \left(F_{u,t} \Psi_t F_{u,t}^T\right)^{-1} \left[ u_{t+1} - A_{u,t} z_t - F_{u,t} \Psi_t \left( F_{z,t}^T \lambda_{t+1} - F_{z,t}^T \Omega_{t+1} A_{z,t} z_t \right) \right] \nonumber \\
+     & = & \left[ z_t^T A_{z,t}^T \Omega_{t+1} A_{z,t} z_t - 2 \lambda_{t+1}^T A_{z,t} z_t \right] \nonumber \\  % 2 terms
+     &   & - \: \left[ \lambda_{t+1}^T F_{z,t} - z_t^T A_{z,t}^T \Omega_{t+1} F_{z,t} \right] \Psi_t \left[ F_{z,t}^T \lambda_{t+1} - F_{z,t}^T \Omega_{t+1} A_{z,t} z_t \right] \nonumber \\  % 3 terms
+     &   & + \: \left[ u_{t+1} - F_{u,t} \Psi_t F_{z,t}^T \lambda_{t+1} + \left(F_{u,t} \Psi_t F_{z,t}^T \Omega_{t+1} A_{z,t} - A_{u,t} \right) z_t \right]^T \nonumber \\ % 3 terms
+     &   & \qquad \times \left(F_{u,t} \Psi_t F_{u,t}^T\right)^{-1} \left[ u_{t+1} - F_{u,t} \Psi_t F_{z,t}^T \lambda_{t+1} + \left(F_{u,t} \Psi_t F_{z,t}^T \Omega_{t+1} A_{z,t} - A_{u,t} \right) z_t \right] \nonumber \\
+     & = & z_t^T \left[ A_{z,t}^T \Omega_{t+1} A_{z,t} - A_{z,t}^T \Omega_{t+1} F_{z,t} \Psi_t F_{z,t}^T \Omega_{t+1} A_{z,t} + \gamma_t^T \left(F_{u,t} \Psi_t F_{u,t}^T\right)^{-1} \gamma_t \right] z_t \nonumber \\ % 3 terms
+     &   & - 2 \left[ \lambda_{t+1}^T A_{z,t} - \lambda_{t+1}^T F_{z,t} \Psi_t F_{z,t}^T \Omega_{t+1} A_{z,t} - \left[ u_{t+1}^T - \lambda_{t+1}^T F_{z,t} \Psi_t F_{u,t}^T \right] \left(F_{u,t} \Psi_t F_{u,t}^T\right)^{-1} \gamma_t \right] z_t \nonumber \\  % 3 terms
+     &   & + \left[ - \lambda_{t+1}^T F_{z,t} \Psi_t F_{z,t}^T \lambda_{t+1} + \left[ u_{t+1}^T - \lambda_{t+1}^T F_{z,t} \Psi_t F_{u,t}^T \right] \left(F_{u,t} \Psi_t F_{u,t}^T\right)^{-1} \left[ u_{t+1} - F_{u,t} \Psi_t F_{z,t}^T \lambda_{t+1} \right] \right]      , %
 \end{IEEEeqnarray}
 
-HANG ON! $F_{u,t}^T F_{u,t}$ is not invertible. This needs rethinking.
+\begin{IEEEeqnarray}{rCl}
+ \Psi_t   & = & \left( F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right)^{-1} \nonumber \\
+ \gamma_t & = & \left(F_{u,t} \Psi_t F_{z,t}^T \Omega_{t+1} A_{z,t} - A_{u,t} \right)     .
+\end{IEEEeqnarray}
 
-We can only evaluate the term $\left[ F_{u,t} \left( F_{z,t}^T \Omega_{t+1} F_{z,t} + I \right)^{-1} F_{u,t}^T \right]^{-1}$ if $F_{u,t}$ is full rank. This equates to requiring $Q_{u,t}$ to be full rank. With this condition imposed, the expression above simplifies somewhat,
+Hence the recursions are,
 %
+\begin{IEEEeqnarray}{rCl}
+ \hat{\Omega}_t & = & A_{z,t}^T \Omega_{t+1} A_{z,t} - A_{z,t}^T \Omega_{t+1} F_{z,t} \Psi_t F_{z,t}^T \Omega_{t+1} A_{z,t} + \gamma_t^T \left(F_{u,t} \Psi_t F_{u,t}^T\right)^{-1} \gamma_t \nonumber \\
+ \hat{\lambda}_t & = & A_{z,t}^T \lambda_{t+1} - A_{z,t}^T \Omega_{t+1} F_{z,t} \Psi_t F_{z,t}^T \lambda_{t+1} - \gamma_t^T \left(F_{u,t} \Psi_t F_{u,t}^T\right)^{-1} \left[ u_{t+1} - F_{u,t} \Psi_t F_{z,t}^T \lambda_{t+1} \right] \nonumber \\
+ \hat{Z}_t & = & Z_{t+1} \left| \left| 2 \pi I \right| \right|^{-\frac{1}{2}} \frac{ \left| \left| \Psi_t \right| \right|^{\frac{1}{2}} }{ \left| \left|\left(F_{u,t} \Psi_t F_{u,t}^T\right) \right| \right|^{\frac{1}{2}} }     \nonumber \\
+                 &   & \times \exp\left\{ -\frac{1}{2} \left[ - \lambda_{t+1}^T F_{z,t} \Psi_t F_{z,t}^T \lambda_{t+1} + \left[ u_{t+1}^T - \lambda_{t+1}^T F_{z,t} \Psi_t F_{u,t}^T \right] \left(F_{u,t} \Psi_t F_{u,t}^T\right)^{-1} \left[ u_{t+1} - F_{u,t} \Psi_t F_{z,t}^T \lambda_{t+1} \right] \right] \right\}
+\end{IEEEeqnarray}
 
+The last line follows from normalising the exponential and expressing the delta function as a limit of a Gaussian density, then using standard Gaussian formulas. The result looks horrible, and its quite likely that I've made an algebra mistake.
 
+For the recursions to work, we require that $\left(F_{u,t} \Psi_t F_{u,t}^T\right)$ be invertible. Lets consider when this happens.
 
+Denote the length of $q_t$, $q_{u,t}$ and $q_{z,t}$ by $d_t$, $d_{u,t}$ and $d_{z,t}$ respectively, and the ranks of $Q_t$, $Q_{u,t}$ and $Q_{z,t}$ by $r_t$, $r_{u,t}$ and $r_{z,t}$ respectively. $\left(F_{u,t} \Psi_t F_{u,t}^T\right)$ is invertible if $F_{u,t}$ is full rank. $F_{u,t}$ is a $d_{u,t} \times r_t$ matrix, so the condition is satisfied provided $d_{u,t} \leq r_t$ (which is highly probable --- otherwise $Q_{u,t}$ would have to have a nullity at least as great as the rank of $Q_{z,t}$) and $\text{rank}\left(F_{u,t}\right) = d_{u,t}$. These conditions are satisfied if and only if $Q_{u,t}$ is invertible.
 
+%If $q_{u,t}$ and $q_{z,t}$ are independent, then we would find $r_{z,t}$ columns of zeros in $F_{u,t}$, so $\text{rank}\left(F_{u,t}\right) \leq r_t - r_{z,t} = r_{u,t}$. Since $r_{u,t} \leq d_{u,t}$, the conditions are satisfied if and only if $d_{u,t} = r_{u,t}$. In words, $Q_{u,t}$ must be full rank and hence invertible, as we previously discovered.
+
+We can do a quick check of the recursions by examining the case where $Q_{C,t} = 0$. In this case, the following simplifications can be made,
+%
+\begin{IEEEeqnarray}{rCl}
+ F_{z,t} & = & \begin{bmatrix} \tilde{F}_{z,t} & 0 \end{bmatrix} \nonumber \\
+ F_{u,t} & = & \begin{bmatrix} 0 & \tilde{F}_{u,t} \end{bmatrix} \nonumber \\
+ \Psi_t  & = & \begin{bmatrix} \left(\tilde{F}_{z,t} \Omega_{t+1} \tilde{F}_{z,t}^T + I\right)^{-1} & 0 \\ 0 & I \end{bmatrix} \nonumber \\
+ F_{z,t} \Psi_t F_{z,t}^T & = & \tilde{F}_{z,t} \left(\tilde{F}_{z,t} \Omega_{t+1} \tilde{F}_{z,t}^T + I\right)^{-1} \tilde{F}_{z,t}^T \nonumber \\
+ F_{u,t} \Psi_t F_{u,t}^T & = & \tilde{F}_{u,t} \tilde{F}_{u,t}^T = Q_{u,t} \nonumber \\
+ F_{u,t} \Psi_t F_{z,t}^T & = & 0 \nonumber \\
+ \gamma_t & = & -A_{u,t} \nonumber     .
+\end{IEEEeqnarray}
+
+Using these, it can be shown that the recursions simplify to those derived for the non-correlated case.
 
 \end{document} 
